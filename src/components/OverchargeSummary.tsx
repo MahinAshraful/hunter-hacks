@@ -19,8 +19,8 @@ export default function OverchargeSummary({ estimate }: Props) {
     : 'border-emerald-200 bg-emerald-50';
   const headingClass = hasOvercharge ? 'text-red-800' : 'text-emerald-800';
   const headline = hasOvercharge
-    ? `You may have been overcharged ${fmt(estimate.overcharge_total_within_limit)} in the last 4 years.`
-    : 'No overcharge detected in the last 4 years.';
+    ? `You may have been overcharged ${fmt(estimate.overcharge_total_within_limit)} in the last 6 years.`
+    : 'No overcharge detected in the last 6 years.';
 
   return (
     <div className={`mt-6 rounded-lg border p-6 ${containerClass}`}>
@@ -59,7 +59,7 @@ export default function OverchargeSummary({ estimate }: Props) {
                 <th className="py-2 pr-3 text-right">Legal rent</th>
                 <th className="py-2 pr-3 text-right">Actual rent</th>
                 <th className="py-2 pr-3 text-right">Overcharge / mo</th>
-                <th className="py-2 text-right">Within 4-yr window</th>
+                <th className="py-2 text-right">Within 6-yr window</th>
               </tr>
             </thead>
             <tbody>
@@ -109,14 +109,14 @@ export default function OverchargeSummary({ estimate }: Props) {
 
       <p className="mt-4 text-xs text-gray-400">
         Estimate only — not legal advice. The DHCR is the authoritative source. To anchor on a
-        registered base rent, request your rent history with{' '}
+        registered base rent, request your apartment rent history from DHCR{' '}
         <a
-          href="https://hcr.ny.gov/system/files/documents/2024/03/ra-90.pdf"
+          href="https://hcr.ny.gov/records-access"
           target="_blank"
           rel="noopener noreferrer"
           className="underline hover:text-gray-600"
         >
-          DHCR Form RA-90
+          Records Access (Form REC-1)
         </a>
         .
       </p>

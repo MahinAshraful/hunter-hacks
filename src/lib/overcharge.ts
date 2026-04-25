@@ -44,7 +44,11 @@ export type Estimate = {
   caveats: string[];
 };
 
-const STATUTE_YEARS = 4;
+// HSTPA (2019) extended the overcharge lookback window from 4 to 6 years for
+// complaints filed on or after 2019-06-14. Pre-HSTPA filings are reviewed under
+// the prior 4-year rule, which we don't try to model here — the demo is for
+// tenants filing today.
+const STATUTE_YEARS = 6;
 const ROUND_CENTS = (n: number) => Math.round(n * 100) / 100;
 
 function parseDate(iso: string): Date {
@@ -80,7 +84,7 @@ export function estimate(input: EstimateInput): Estimate {
   const caveats: string[] = [
     'MCI (Major Capital Improvement) and IAI (Individual Apartment Improvement) increases are not modeled — these can legally raise the legal rent above what RGB alone would allow.',
     'Vacancy allowances (pre-2019, under prior law) are not modeled.',
-    `Overcharge totals are limited to the ${STATUTE_YEARS}-year statute window prior to today.`,
+    `Overcharge totals are limited to the ${STATUTE_YEARS}-year statute window prior to today (HSTPA, 2019).`,
   ];
 
   const fullHistory = sortHistory(input.history);
@@ -130,7 +134,7 @@ export function estimate(input: EstimateInput): Estimate {
     prevLegalRent = history[0].monthlyRent;
     startIndex = 1;
     caveats.unshift(
-      'No registered base rent supplied — the first lease in your history is treated as the starting legal rent. If that first rent was itself an overcharge, this estimator cannot detect it. Request your DHCR rent history (Form RA-90) to anchor on a registered base.',
+      'No registered base rent supplied — the first lease in your history is treated as the starting legal rent. If that first rent was itself an overcharge, this estimator cannot detect it. Request your DHCR apartment rent history via Records Access (Form REC-1) to anchor on a registered base.',
     );
   }
 
