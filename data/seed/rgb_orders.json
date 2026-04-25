@@ -1,0 +1,458 @@
+[
+  {
+    "order_no": 57,
+    "lease_start_from": "2025-10-01",
+    "lease_start_to": "2026-09-30",
+    "one_year_pct": 3.0,
+    "two_year_pct": 4.5,
+    "notes": "HSTPA 2019: no separate vacancy allowance permitted."
+  },
+  {
+    "order_no": 56,
+    "lease_start_from": "2024-10-01",
+    "lease_start_to": "2025-09-30",
+    "one_year_pct": 2.75,
+    "two_year_pct": 5.25,
+    "notes": "HSTPA 2019: no separate vacancy allowance permitted."
+  },
+  {
+    "order_no": 55,
+    "lease_start_from": "2023-10-01",
+    "lease_start_to": "2024-09-30",
+    "one_year_pct": 3.0,
+    "two_year_pct": 6.04,
+    "notes": "Two-year structured: 2.75% in year 1, then 3.2% above year 1 rent in year 2 (compound effective ~6.04%). HSTPA: no vacancy allowance."
+  },
+  {
+    "order_no": 54,
+    "lease_start_from": "2022-10-01",
+    "lease_start_to": "2023-09-30",
+    "one_year_pct": 3.25,
+    "two_year_pct": 5.0,
+    "notes": "HSTPA: no vacancy allowance."
+  },
+  {
+    "order_no": 53,
+    "lease_start_from": "2021-10-01",
+    "lease_start_to": "2022-09-30",
+    "one_year_pct": 1.5,
+    "two_year_pct": 2.5,
+    "notes": "One-year structure: 0% for first 6 months, 1.5% for last 6 months (end-of-lease rent = base * 1.015). HSTPA: no vacancy allowance."
+  },
+  {
+    "order_no": 52,
+    "lease_start_from": "2020-10-01",
+    "lease_start_to": "2021-09-30",
+    "one_year_pct": 0.0,
+    "two_year_pct": 1.0,
+    "notes": "Two-year structure: 0% in year 1, then 1.0% in year 2 (end-of-lease rent = base * 1.01). HSTPA: no vacancy allowance."
+  },
+  {
+    "order_no": 51,
+    "lease_start_from": "2019-10-01",
+    "lease_start_to": "2020-09-30",
+    "one_year_pct": 1.5,
+    "two_year_pct": 2.5,
+    "notes": "First order under HSTPA 2019."
+  },
+  {
+    "order_no": 50,
+    "lease_start_from": "2018-10-01",
+    "lease_start_to": "2019-09-30",
+    "one_year_pct": 1.5,
+    "two_year_pct": 2.5,
+    "notes": "Vacancy allowance permitted under Rent Regulation Reform Act of 1997 (and Rent Act of 2015)."
+  },
+  {
+    "order_no": 49,
+    "lease_start_from": "2017-10-01",
+    "lease_start_to": "2018-09-30",
+    "one_year_pct": 1.25,
+    "two_year_pct": 2.0,
+    "notes": null
+  },
+  {
+    "order_no": 48,
+    "lease_start_from": "2016-10-01",
+    "lease_start_to": "2017-09-30",
+    "one_year_pct": 0.0,
+    "two_year_pct": 2.0,
+    "notes": null
+  },
+  {
+    "order_no": 47,
+    "lease_start_from": "2015-10-01",
+    "lease_start_to": "2016-09-30",
+    "one_year_pct": 0.0,
+    "two_year_pct": 2.0,
+    "notes": null
+  },
+  {
+    "order_no": 46,
+    "lease_start_from": "2014-10-01",
+    "lease_start_to": "2015-09-30",
+    "one_year_pct": 1.0,
+    "two_year_pct": 2.75,
+    "notes": null
+  },
+  {
+    "order_no": 45,
+    "lease_start_from": "2013-10-01",
+    "lease_start_to": "2014-09-30",
+    "one_year_pct": 4.0,
+    "two_year_pct": 7.75,
+    "notes": null
+  },
+  {
+    "order_no": 44,
+    "lease_start_from": "2012-10-01",
+    "lease_start_to": "2013-09-30",
+    "one_year_pct": 2.0,
+    "two_year_pct": 4.0,
+    "notes": "Minimum dollar amounts ($20 / $40) apply when greater than the percentage."
+  },
+  {
+    "order_no": 43,
+    "lease_start_from": "2011-10-01",
+    "lease_start_to": "2012-09-30",
+    "one_year_pct": 3.75,
+    "two_year_pct": 7.25,
+    "notes": null
+  },
+  {
+    "order_no": 42,
+    "lease_start_from": "2010-10-01",
+    "lease_start_to": "2011-09-30",
+    "one_year_pct": 2.25,
+    "two_year_pct": 4.5,
+    "notes": null
+  },
+  {
+    "order_no": 41,
+    "lease_start_from": "2009-10-01",
+    "lease_start_to": "2010-09-30",
+    "one_year_pct": 3.0,
+    "two_year_pct": 6.0,
+    "notes": "Rates assume owner provides heat. If tenant pays heat: 2.5% / 5.0%. Long-term tenant minimums apply."
+  },
+  {
+    "order_no": 40,
+    "lease_start_from": "2008-10-01",
+    "lease_start_to": "2009-09-30",
+    "one_year_pct": 4.5,
+    "two_year_pct": 8.5,
+    "notes": "Rates assume owner provides heat. If tenant pays heat: 4.0% / 8.0%. Long-term tenant minimums apply."
+  },
+  {
+    "order_no": 39,
+    "lease_start_from": "2007-10-01",
+    "lease_start_to": "2008-09-30",
+    "one_year_pct": 3.0,
+    "two_year_pct": 5.75,
+    "notes": null
+  },
+  {
+    "order_no": 38,
+    "lease_start_from": "2006-10-01",
+    "lease_start_to": "2007-09-30",
+    "one_year_pct": 4.25,
+    "two_year_pct": 7.25,
+    "notes": "Rates assume owner provides heat. If tenant pays heat: 3.75% / 6.75%."
+  },
+  {
+    "order_no": 37,
+    "lease_start_from": "2005-10-01",
+    "lease_start_to": "2006-09-30",
+    "one_year_pct": 2.75,
+    "two_year_pct": 5.5,
+    "notes": "Rates assume owner provides heat. If tenant pays heat: 2.25% / 4.5%."
+  },
+  {
+    "order_no": 36,
+    "lease_start_from": "2004-10-01",
+    "lease_start_to": "2005-09-30",
+    "one_year_pct": 3.5,
+    "two_year_pct": 6.5,
+    "notes": "Rates assume owner provides heat. If tenant pays heat: 3.0% / 6.0%."
+  },
+  {
+    "order_no": 35,
+    "lease_start_from": "2003-10-01",
+    "lease_start_to": "2004-09-30",
+    "one_year_pct": 4.5,
+    "two_year_pct": 7.5,
+    "notes": null
+  },
+  {
+    "order_no": 34,
+    "lease_start_from": "2002-10-01",
+    "lease_start_to": "2003-09-30",
+    "one_year_pct": 2.0,
+    "two_year_pct": 4.0,
+    "notes": null
+  },
+  {
+    "order_no": 33,
+    "lease_start_from": "2001-10-01",
+    "lease_start_to": "2002-09-30",
+    "one_year_pct": 4.0,
+    "two_year_pct": 6.0,
+    "notes": null
+  },
+  {
+    "order_no": 32,
+    "lease_start_from": "2000-10-01",
+    "lease_start_to": "2001-09-30",
+    "one_year_pct": 4.0,
+    "two_year_pct": 6.0,
+    "notes": "$15 minimum increase if rent <= $500; rents below $215 raised to $215."
+  },
+  {
+    "order_no": 31,
+    "lease_start_from": "1999-10-01",
+    "lease_start_to": "2000-09-30",
+    "one_year_pct": 2.0,
+    "two_year_pct": 4.0,
+    "notes": "$15 minimum increase if rent <= $500; rents below $215 raised to $215."
+  },
+  {
+    "order_no": 30,
+    "lease_start_from": "1998-10-01",
+    "lease_start_to": "1999-09-30",
+    "one_year_pct": 2.0,
+    "two_year_pct": 4.0,
+    "notes": "$15 minimum increase if rent < $450 (capped at $465 resulting rent)."
+  },
+  {
+    "order_no": 29,
+    "lease_start_from": "1997-10-01",
+    "lease_start_to": "1998-09-30",
+    "one_year_pct": 2.0,
+    "two_year_pct": 4.0,
+    "notes": "$15 minimum increase if rent <= $400 (capped at $415 resulting rent)."
+  },
+  {
+    "order_no": 28,
+    "lease_start_from": "1996-10-01",
+    "lease_start_to": "1997-09-30",
+    "one_year_pct": 5.0,
+    "two_year_pct": 7.0,
+    "notes": "$20 minimum increase if rent <= $400. Vacancy: 9%."
+  },
+  {
+    "order_no": 27,
+    "lease_start_from": "1995-10-01",
+    "lease_start_to": "1996-09-30",
+    "one_year_pct": 2.0,
+    "two_year_pct": 4.0,
+    "notes": "$20 minimum increase if rent <= $400. Vacancy: 8.5%."
+  },
+  {
+    "order_no": 26,
+    "lease_start_from": "1994-10-01",
+    "lease_start_to": "1995-09-30",
+    "one_year_pct": 2.0,
+    "two_year_pct": 4.0,
+    "notes": "$15 minimum if rent < $400 (in <=30-unit buildings). Vacancy: 10% (rents <$400, <=30 units) or 5% (others <$1000)."
+  },
+  {
+    "order_no": 25,
+    "lease_start_from": "1993-10-01",
+    "lease_start_to": "1994-09-30",
+    "one_year_pct": 3.0,
+    "two_year_pct": 5.0,
+    "notes": "Vacancy: 5% (rent <$500), 3% (>=$500 and <$1000), 0% (>=$1000)."
+  },
+  {
+    "order_no": 24,
+    "lease_start_from": "1992-10-01",
+    "lease_start_to": "1993-09-30",
+    "one_year_pct": 3.0,
+    "two_year_pct": 5.0,
+    "notes": "Vacancy: 5%."
+  },
+  {
+    "order_no": 23,
+    "lease_start_from": "1991-10-01",
+    "lease_start_to": "1992-09-30",
+    "one_year_pct": 4.0,
+    "two_year_pct": 6.5,
+    "notes": "Vacancy: 5%."
+  },
+  {
+    "order_no": 22,
+    "lease_start_from": "1990-10-01",
+    "lease_start_to": "1991-09-30",
+    "one_year_pct": 4.5,
+    "two_year_pct": 7.0,
+    "notes": "Vacancy: 5%."
+  },
+  {
+    "order_no": 21,
+    "lease_start_from": "1989-10-01",
+    "lease_start_to": "1990-09-30",
+    "one_year_pct": 5.5,
+    "two_year_pct": 9.0,
+    "notes": "$5 minimum if rent < $325. Vacancy: 12%."
+  },
+  {
+    "order_no": 20,
+    "lease_start_from": "1988-10-01",
+    "lease_start_to": "1989-09-30",
+    "one_year_pct": 6.0,
+    "two_year_pct": 9.0,
+    "notes": "$5 minimum if rent < $325. Vacancy: 12%."
+  },
+  {
+    "order_no": 19,
+    "lease_start_from": "1987-10-01",
+    "lease_start_to": "1988-09-30",
+    "one_year_pct": 3.0,
+    "two_year_pct": 6.5,
+    "notes": "$10 minimum if rent < $325. Vacancy: 10%."
+  },
+  {
+    "order_no": 18,
+    "lease_start_from": "1986-10-01",
+    "lease_start_to": "1987-09-30",
+    "one_year_pct": 6.0,
+    "two_year_pct": 9.0,
+    "notes": "$15 minimum if rent < $350. Vacancy: 7.5%."
+  },
+  {
+    "order_no": 17,
+    "lease_start_from": "1985-10-01",
+    "lease_start_to": "1986-09-30",
+    "one_year_pct": 4.0,
+    "two_year_pct": 6.5,
+    "notes": "$15 minimum if rent < $300. Vacancy: 7.5%."
+  },
+  {
+    "order_no": 16,
+    "lease_start_from": "1984-10-01",
+    "lease_start_to": "1985-09-30",
+    "one_year_pct": 6.0,
+    "two_year_pct": 9.0,
+    "notes": "$10 minimum if rent < $250. Vacancy: 7.5%. Three-year leases no longer required as of 10/1/83."
+  },
+  {
+    "order_no": 15,
+    "lease_start_from": "1983-10-01",
+    "lease_start_to": "1984-09-30",
+    "one_year_pct": 4.0,
+    "two_year_pct": 7.0,
+    "notes": "Three-year: 10%. Vacancy: 0/5/10/15% based on prior vacancy history. Electrical inclusion: minus 1%."
+  },
+  {
+    "order_no": 14,
+    "lease_start_from": "1982-10-01",
+    "lease_start_to": "1983-09-30",
+    "one_year_pct": 4.0,
+    "two_year_pct": 7.0,
+    "notes": "Three-year: 10%. No vacancy allowance. Electrical inclusion: minus 1%."
+  },
+  {
+    "order_no": 13,
+    "lease_start_from": "1981-10-01",
+    "lease_start_to": "1982-09-30",
+    "one_year_pct": 10.0,
+    "two_year_pct": 13.0,
+    "notes": "Owner provides heat. Tenant pays heat: 6.5% / 9.5% / 12.5% (3-yr). Three-year: 16%. Vacancy: 15%. Electrical inclusion: 4%. Starting with this order, increases apply to legal rent on 9/30 of prior year."
+  },
+  {
+    "order_no": 12,
+    "lease_start_from": "1980-07-01",
+    "lease_start_to": "1981-06-30",
+    "one_year_pct": 11.0,
+    "two_year_pct": 14.0,
+    "notes": "15-month period. Owner provides heat. Tenant pays heat: 5% / 7% / 9%. Three-year: 17%. Vacancy 5% or 10% or 15% based on tenancy history. Electrical inclusion: 1.5%."
+  },
+  {
+    "order_no": 11,
+    "lease_start_from": "1979-07-01",
+    "lease_start_to": "1980-06-30",
+    "one_year_pct": 8.5,
+    "two_year_pct": 12.0,
+    "notes": "Three-year: 15%. Vacancy: 5% or 15% depending on lease start month. $8/month fuel surcharge possible."
+  },
+  {
+    "order_no": 10,
+    "lease_start_from": "1978-07-01",
+    "lease_start_to": "1979-06-30",
+    "one_year_pct": 4.5,
+    "two_year_pct": 6.5,
+    "notes": "Three-year: 8.5%. Vacancy: 5%. Electrical inclusion: 0.5%. Fuel adjustments could be charged starting 3/1/79 (Orders 10b-e)."
+  },
+  {
+    "order_no": 9,
+    "lease_start_from": "1977-07-01",
+    "lease_start_to": "1978-06-30",
+    "one_year_pct": 6.5,
+    "two_year_pct": 8.5,
+    "notes": "Three-year: 11.5%. Vacancy: 5%. Electrical inclusion: 4%."
+  },
+  {
+    "order_no": 8,
+    "lease_start_from": "1976-07-01",
+    "lease_start_to": "1977-06-30",
+    "one_year_pct": 6.5,
+    "two_year_pct": 8.0,
+    "notes": "Three-year: 11.0%. Vacancy: 5%. Electrical inclusion: 3.5%."
+  },
+  {
+    "order_no": 7,
+    "lease_start_from": "1975-07-01",
+    "lease_start_to": "1976-06-30",
+    "one_year_pct": 7.5,
+    "two_year_pct": 9.5,
+    "notes": "Three-year: 12.5%. Vacancy: 5%. Electrical inclusion: 3.5%."
+  },
+  {
+    "order_no": 6,
+    "lease_start_from": "1974-07-01",
+    "lease_start_to": "1975-06-30",
+    "one_year_pct": 8.5,
+    "two_year_pct": 10.5,
+    "notes": "Three-year: 12%. No vacancy allowance. Electrical inclusion: 2.5%."
+  },
+  {
+    "order_no": 5,
+    "lease_start_from": "1973-07-01",
+    "lease_start_to": "1974-06-30",
+    "one_year_pct": 6.5,
+    "two_year_pct": 8.5,
+    "notes": "Three-year: 10.5%. Vacancy: 5% (limited applicability under Vacancy Decontrol)."
+  },
+  {
+    "order_no": 4,
+    "lease_start_from": "1972-07-01",
+    "lease_start_to": "1973-06-30",
+    "one_year_pct": 6.0,
+    "two_year_pct": 8.0,
+    "notes": "Three-year: 10%. Vacancy: 5%. Renewal also includes 0.5% stabilizer."
+  },
+  {
+    "order_no": 3,
+    "lease_start_from": "1971-07-01",
+    "lease_start_to": "1972-06-30",
+    "one_year_pct": 7.0,
+    "two_year_pct": 9.0,
+    "notes": "Three-year: 12%. Vacancy: 10%. Renewal also includes 1.0% stabilizer."
+  },
+  {
+    "order_no": 2,
+    "lease_start_from": "1970-07-01",
+    "lease_start_to": "1971-06-30",
+    "one_year_pct": 6.0,
+    "two_year_pct": 8.0,
+    "notes": "Three-year: 11%. Vacancy: 7.5%. Renewal also includes 1.0% stabilizer."
+  },
+  {
+    "order_no": 1,
+    "lease_start_from": "1968-07-01",
+    "lease_start_to": "1970-06-30",
+    "one_year_pct": 10.0,
+    "two_year_pct": 10.0,
+    "notes": "Two-year period. Three-year: 15%. Vacancy: 5% (2yr) or 10% (3yr). Tenant could request a one-year extension at the same rent."
+  }
+]
