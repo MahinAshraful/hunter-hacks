@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import DatePicker from 'react-datepicker';
 import type { LeaseEntry, BaseRent } from '@/lib/overcharge';
 
 type LeaseRow = {
-  startDate: string;
-  endDate: string;
+  startDate: Date | null;
+  endDate: Date | null;
   monthlyRent: string;
   leaseTermMonths: 12 | 24;
 };
@@ -16,16 +17,23 @@ type Props = {
 };
 
 const EMPTY_ROW: LeaseRow = {
-  startDate: '',
-  endDate: '',
+  startDate: null,
+  endDate: null,
   monthlyRent: '',
   leaseTermMonths: 12,
 };
 
+function toISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function isCompleteRow(row: LeaseRow): boolean {
   return (
-    row.startDate.length === 10 &&
-    row.endDate.length === 10 &&
+    row.startDate !== null &&
+    row.endDate !== null &&
     row.monthlyRent.trim() !== '' &&
     Number.parseFloat(row.monthlyRent) > 0
   );
@@ -34,11 +42,14 @@ function isCompleteRow(row: LeaseRow): boolean {
 const inputClass =
   'rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40';
 
+const datePickerClass =
+  'w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40 bg-surface cursor-pointer';
+
 export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
   const [rows, setRows] = useState<LeaseRow[]>([{ ...EMPTY_ROW }]);
   const [includeBase, setIncludeBase] = useState(false);
   const [baseAmount, setBaseAmount] = useState('');
-  const [baseAsOf, setBaseAsOf] = useState('');
+  const [baseAsOf, setBaseAsOf] = useState<Date | null>(null);
   const [baseTerm, setBaseTerm] = useState<12 | 24>(12);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,15 +76,15 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
     }
 
     for (const r of completeRows) {
-      if (r.startDate >= r.endDate) {
-        setError(`Lease starting ${r.startDate} must end after it starts.`);
+      if (r.startDate! >= r.endDate!) {
+        setError(`Lease starting ${toISO(r.startDate!)} must end after it starts.`);
         return;
       }
     }
 
     const history: LeaseEntry[] = completeRows.map((r) => ({
-      startDate: r.startDate,
-      endDate: r.endDate,
+      startDate: toISO(r.startDate!),
+      endDate: toISO(r.endDate!),
       monthlyRent: Number.parseFloat(r.monthlyRent),
       leaseTermMonths: r.leaseTermMonths,
     }));
@@ -81,15 +92,21 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
     let baseRent: BaseRent | undefined;
     if (includeBase) {
       const amt = Number.parseFloat(baseAmount);
-      if (!Number.isFinite(amt) || amt <= 0 || baseAsOf.length !== 10) {
+      if (!Number.isFinite(amt) || amt <= 0 || !baseAsOf) {
         setError('Registered base rent needs both an amount and an "as of" date.');
         return;
       }
-      baseRent = { amount: amt, asOfDate: baseAsOf, termMonths: baseTerm };
+      baseRent = { amount: amt, asOfDate: toISO(baseAsOf), termMonths: baseTerm };
     }
 
     onSubmit({ history, baseRent });
   }
+
+  const yearRange = (): { min: number; max: number } => {
+    const now = new Date().getFullYear();
+    return { min: 1970, max: now + 2 };
+  };
+  const { min: minYear, max: maxYear } = yearRange();
 
   return (
     <form onSubmit={handleSubmit} className="mt-8 space-y-6 rounded-xl border border-border bg-surface p-6 shadow-sm animate-fade-in-up">
@@ -111,20 +128,36 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
         </div>
         {rows.map((row, i) => (
           <div key={i} className="grid grid-cols-12 gap-2">
-            <input
-              type="date"
-              value={row.startDate}
-              onChange={(e) => updateRow(i, { startDate: e.target.value })}
-              className={`col-span-3 ${inputClass}`}
-              required
-            />
-            <input
-              type="date"
-              value={row.endDate}
-              onChange={(e) => updateRow(i, { endDate: e.target.value })}
-              className={`col-span-3 ${inputClass}`}
-              required
-            />
+            <div className="col-span-3">
+              <DatePicker
+                selected={row.startDate}
+                onChange={(date: Date | null) => updateRow(i, { startDate: date })}
+                dateFormat="MM/dd/yyyy"
+                placeholderText="Start date"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                minDate={new Date(minYear, 0, 1)}
+                maxDate={new Date(maxYear, 11, 31)}
+                className={datePickerClass}
+                required
+              />
+            </div>
+            <div className="col-span-3">
+              <DatePicker
+                selected={row.endDate}
+                onChange={(date: Date | null) => updateRow(i, { endDate: date })}
+                dateFormat="MM/dd/yyyy"
+                placeholderText="End date"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                minDate={row.startDate ?? new Date(minYear, 0, 1)}
+                maxDate={new Date(maxYear, 11, 31)}
+                className={datePickerClass}
+                required
+              />
+            </div>
             <div className="relative col-span-3">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">$</span>
               <input
@@ -195,13 +228,21 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 className={`w-full pl-6 ${inputClass}`}
               />
             </div>
-            <input
-              type="date"
-              value={baseAsOf}
-              onChange={(e) => setBaseAsOf(e.target.value)}
-              className={`col-span-4 ${inputClass}`}
-              aria-label="As of date"
-            />
+            <div className="col-span-4">
+              <DatePicker
+                selected={baseAsOf}
+                onChange={(date: Date | null) => setBaseAsOf(date)}
+                dateFormat="MM/dd/yyyy"
+                placeholderText="As of date"
+                showMonthDropdown
+                showYearDropdown
+                dropdownMode="select"
+                minDate={new Date(minYear, 0, 1)}
+                maxDate={new Date()}
+                className={datePickerClass}
+                aria-label="As of date"
+              />
+            </div>
             <select
               value={baseTerm}
               onChange={(e) => setBaseTerm(Number(e.target.value) as 12 | 24)}
