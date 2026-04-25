@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import AddressSearch from '@/components/AddressSearch';
+import DemoAddresses from '@/components/DemoAddresses';
 import ResultCard from '@/components/ResultCard';
 import RentHistoryForm from '@/components/RentHistoryForm';
 import OverchargeSummary from '@/components/OverchargeSummary';
 import ComplaintPreview from '@/components/ComplaintPreview';
+import Footer from '@/components/Footer';
 import type { GeoResult } from '@/lib/geosearch';
 import type { Verdict } from '@/lib/stabilization';
 import type { Estimate, LeaseEntry, BaseRent } from '@/lib/overcharge';
@@ -97,6 +99,7 @@ export default function Home() {
 
         <div className="mt-8">
           <AddressSearch onSelect={handleSelect} disabled={isLooking} />
+          <DemoAddresses onSelect={handleSelect} disabled={isLooking} />
         </div>
 
         {isLooking && (
@@ -106,7 +109,12 @@ export default function Home() {
         {lookupError && <p className="mt-4 text-sm text-red-600">{lookupError}</p>}
 
         {lookup && selectedResult && (
-          <ResultCard verdict={lookup} address={selectedResult.label} />
+          <ResultCard
+            verdict={lookup}
+            address={selectedResult.label}
+            lat={selectedResult.lat}
+            lng={selectedResult.lng}
+          />
         )}
 
         {showForm && (
@@ -129,6 +137,7 @@ export default function Home() {
           />
         )}
       </main>
+      <Footer />
     </div>
   );
 }

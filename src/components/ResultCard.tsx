@@ -3,6 +3,8 @@ import type { Verdict } from '@/lib/stabilization';
 type Props = {
   verdict: Verdict;
   address: string;
+  lat?: number;
+  lng?: number;
 };
 
 const STATUS_CONFIG = {
@@ -17,19 +19,23 @@ const STATUS_CONFIG = {
     headingClass: 'text-yellow-800',
     heading: 'No stabilization record found for this building.',
     subtext:
-      'The building does not appear in the NYCDB rentstab dataset. DHCR records can lag by 1–2 years. Verify directly with DHCR.',
+      'The building isn’t in the NYCDB rentstab dataset. That doesn’t guarantee it’s unregulated — DHCR records lag by 1–2 years, and some stabilized buildings (e.g. recent 421-a / J-51 properties) may not appear. Cross-check with DHCR before drawing conclusions.',
   },
   unknown: {
     containerClass: 'border-gray-200 bg-gray-50',
     headingClass: 'text-gray-700',
-    heading: 'This address was not found in our database.',
+    heading: 'We don’t have data on this BBL.',
     subtext:
-      'We could not match this BBL to a building in our dataset. Check DHCR directly to confirm stabilization status.',
+      'Your address resolved, but the BBL isn’t in our local copy of the NYCDB rentstab snapshot. The DHCR Building Search below is the next stop.',
   },
 } as const;
 
-export default function ResultCard({ verdict, address }: Props) {
+export default function ResultCard({ verdict, address, lat, lng }: Props) {
   const config = STATUS_CONFIG[verdict.status];
+  const mapUrl =
+    lat !== undefined && lng !== undefined
+      ? `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`
+      : null;
 
   return (
     <div className={`mt-6 rounded-lg border p-6 ${config.containerClass}`}>
@@ -61,7 +67,7 @@ export default function ResultCard({ verdict, address }: Props) {
         </dl>
       )}
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2">
         <a
           href={verdict.dhcr_verify_url}
           target="_blank"
@@ -69,6 +75,24 @@ export default function ResultCard({ verdict, address }: Props) {
           className="text-sm font-medium text-blue-600 underline hover:text-blue-800"
         >
           Verify on DHCR Building Search
+        </a>
+        {mapUrl && (
+          <a
+            href={mapUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-blue-600 underline hover:text-blue-800"
+          >
+            View on map
+          </a>
+        )}
+        <a
+          href="https://hcr.ny.gov/records-access"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-medium text-blue-600 underline hover:text-blue-800"
+        >
+          Request rent history (REC-1)
         </a>
       </div>
 

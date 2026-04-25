@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { buildFieldMap, streamComplaint, type ComplaintInput } from '@/lib/complaint';
 
 export const runtime = 'nodejs';
+// Streaming the full RA-89 draft can take 30-40s on a long lease history.
+// Default Hobby cap is 10s; bump to 60 (Hobby max) so streams aren't cut.
+export const maxDuration = 60;
 
 const VerdictSchema = z.object({
   bbl: z.string().min(1).max(20),
