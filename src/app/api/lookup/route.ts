@@ -27,14 +27,18 @@ export async function POST(request: Request): Promise<Response> {
   const { bbl } = parsed.data;
   const result = verdict(bbl);
 
+  let lookupId: number | undefined;
   try {
     const db = getDb();
-    db.insert(lookups)
+    const inserted = db
+      .insert(lookups)
       .values({ bbl, wasStabilized: result.status === 'likely_stabilized' ? 1 : 0 })
-      .run();
+      .returning({ id: lookups.id })
+      .get();
+    lookupId = inserted?.id;
   } catch (err) {
     console.error('Failed to insert lookup row:', err);
   }
 
-  return Response.json(result);
+  return Response.json({ ...result, lookupId });
 }
