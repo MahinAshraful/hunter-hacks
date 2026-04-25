@@ -79,31 +79,45 @@ export default function AddressSearch({ onSelect, disabled }: Props) {
 
   return (
     <div ref={wrapperRef} className="relative w-full">
-      <input
-        type="text"
-        value={inputValue}
-        onChange={(e) => {
-          setInputValue(e.target.value);
-          setActiveIndex(-1);
-        }}
-        onKeyDown={handleKeyDown}
-        placeholder="Enter a NYC address..."
-        disabled={disabled}
-        className="w-full rounded-md border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-autocomplete="list"
-        aria-haspopup="listbox"
-        aria-activedescendant={activeIndex >= 0 ? `option-${activeIndex}` : undefined}
-        autoComplete="off"
-      />
-      {isLoading && (
-        <span className="absolute right-3 top-3 text-xs text-gray-400">Searching...</span>
-      )}
+      <div className="relative">
+        <svg
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+        </svg>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setActiveIndex(-1);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter a NYC address..."
+          disabled={disabled}
+          className="w-full rounded-xl border border-border bg-surface pl-12 pr-5 py-3 text-base text-primary placeholder-muted shadow-sm transition-shadow focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40 focus:shadow-md disabled:opacity-50"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-autocomplete="list"
+          aria-haspopup="listbox"
+          aria-activedescendant={activeIndex >= 0 ? `option-${activeIndex}` : undefined}
+          autoComplete="off"
+        />
+        {isLoading && (
+          <svg className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        )}
+      </div>
       {isOpen && results.length > 0 && (
         <ul
           role="listbox"
-          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+          className="absolute z-20 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border bg-surface py-1 shadow-lg"
         >
           {results.map((r, i) => (
             <li
@@ -112,8 +126,8 @@ export default function AddressSearch({ onSelect, disabled }: Props) {
               role="option"
               aria-selected={i === activeIndex}
               onMouseDown={() => handleSelect(r)}
-              className={`cursor-pointer px-4 py-2 text-sm ${
-                i === activeIndex ? 'bg-blue-50 text-blue-900' : 'text-gray-700 hover:bg-gray-50'
+              className={`cursor-pointer px-4 py-2.5 text-sm ${
+                i === activeIndex ? 'bg-accent-surface text-accent' : 'text-primary hover:bg-surface-muted'
               }`}
             >
               {r.label}

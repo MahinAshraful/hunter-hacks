@@ -13,6 +13,9 @@ type Props = {
 
 type Phase = 'idle' | 'streaming' | 'done' | 'error';
 
+const inputClass =
+  'w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40 disabled:bg-surface-muted';
+
 export default function ComplaintPreview({ verdict, estimate, address }: Props) {
   const [tenantName, setTenantName] = useState('');
   const [unit, setUnit] = useState('');
@@ -126,153 +129,166 @@ export default function ComplaintPreview({ verdict, estimate, address }: Props) 
   const showText = text.length > 0;
 
   return (
-    <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-6">
-      <h2 className="text-lg font-semibold text-blue-900">Draft a DHCR overcharge complaint</h2>
-      <p className="mt-1 text-sm text-gray-600">
-        We&apos;ll generate plain-English complaint text modeled on DHCR Form RA-89, pre-filled with
-        the figures above. You can edit, copy, or download it before filing.
-      </p>
+    <div className="mt-8 rounded-xl border border-border bg-surface shadow-sm overflow-hidden animate-fade-in-up">
+      <div className="h-1.5 bg-accent" />
+      <div className="p-6">
+        <h2 className="text-lg font-semibold text-primary">Draft a DHCR overcharge complaint</h2>
+        <p className="mt-1 text-sm text-secondary">
+          We&apos;ll generate plain-English complaint text modeled on DHCR Form RA-89, pre-filled with
+          the figures above. You can edit, copy, or download it before filing.
+        </p>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">
-            Tenant name (optional)
-          </label>
-          <input
-            type="text"
-            value={tenantName}
-            onChange={(e) => setTenantName(e.target.value)}
-            placeholder="Jane Tenant"
-            disabled={isStreaming}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium uppercase tracking-wide text-gray-500">
-            Apartment unit (optional)
-          </label>
-          <input
-            type="text"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            placeholder="4B"
-            disabled={isStreaming}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={handleDraft}
-          disabled={isStreaming}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {isStreaming ? 'Drafting…' : phase === 'done' ? 'Draft again' : 'Draft my complaint'}
-        </button>
-        {phase === 'done' && (
-          <>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownload}
-              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-            >
-              Download .txt
-            </button>
-          </>
-        )}
-      </div>
-
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-
-      {showText && (
-        <div className="mt-5">
-          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
-            ⚠ Draft only — not legal advice. Review and edit every line before filing.
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wide text-secondary">
+              Tenant name (optional)
+            </label>
+            <input
+              type="text"
+              value={tenantName}
+              onChange={(e) => setTenantName(e.target.value)}
+              placeholder="Jane Tenant"
+              disabled={isStreaming}
+              className={`mt-1 ${inputClass}`}
+            />
           </div>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            readOnly={isStreaming}
-            rows={Math.min(40, Math.max(20, text.split('\n').length + 2))}
-            className="mt-2 w-full whitespace-pre-wrap rounded-md border border-gray-300 bg-white px-3 py-3 font-mono text-xs leading-relaxed text-gray-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-          {isStreaming && (
-            <p className="mt-1 text-xs text-gray-500">Streaming from Claude…</p>
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wide text-secondary">
+              Apartment unit (optional)
+            </label>
+            <input
+              type="text"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="4B"
+              disabled={isStreaming}
+              className={`mt-1 ${inputClass}`}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleDraft}
+            disabled={isStreaming}
+            className="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/40 focus:ring-offset-2 disabled:opacity-50"
+          >
+            {isStreaming ? 'Drafting…' : phase === 'done' ? 'Draft again' : 'Draft my complaint'}
+          </button>
+          {phase === 'done' && (
+            <>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-primary shadow-sm hover:bg-surface-muted"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-primary shadow-sm hover:bg-surface-muted"
+              >
+                Download .txt
+              </button>
+            </>
           )}
         </div>
-      )}
 
-      {fields && (
-        <details className="mt-4 text-xs text-gray-500">
-          <summary className="cursor-pointer font-medium text-gray-600">Extracted fields</summary>
-          <dl className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-            <div className="flex gap-2">
-              <dt className="font-medium">Tenant:</dt>
-              <dd>{fields.tenant_name}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">Unit:</dt>
-              <dd>{fields.unit}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">Address:</dt>
-              <dd>{fields.address}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">BBL:</dt>
-              <dd>{fields.bbl}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">Legal rent:</dt>
-              <dd>${fields.legal_rent_monthly.toFixed(2)}/mo</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">Actual rent:</dt>
-              <dd>${fields.actual_rent_monthly.toFixed(2)}/mo</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">Overcharge:</dt>
-              <dd>${fields.overcharge_monthly.toFixed(2)}/mo</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-medium">6-year total:</dt>
-              <dd>${fields.overcharge_total_within_limit.toFixed(2)}</dd>
-            </div>
-          </dl>
-        </details>
-      )}
+        {error && (
+          <div className="mt-3 rounded-lg border border-danger-border bg-danger-bg p-3">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
 
-      <p className="mt-4 text-xs text-gray-500">
-        File your completed complaint with the DHCR Office of Rent Administration. Get the
-        official{' '}
-        <a
-          href="https://hcr.ny.gov/form-ra-89"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-gray-700"
-        >
-          Form RA-89 (and RA-89.1)
-        </a>
-        , or file online via{' '}
-        <a
-          href="https://rent.hcr.ny.gov/RentConnect/Tenant/RentOverchargeOverview"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-gray-700"
-        >
-          DHCR Rent Connect
-        </a>
-        .
-      </p>
+        {showText && (
+          <div className="mt-5">
+            <div className="rounded-lg border border-warning-border bg-warning-bg px-3 py-2 text-xs font-medium text-warning">
+              Draft only — not legal advice. Review and edit every line before filing.
+            </div>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              readOnly={isStreaming}
+              rows={Math.min(40, Math.max(20, text.split('\n').length + 2))}
+              className="mt-2 w-full whitespace-pre-wrap rounded-lg border border-border bg-surface px-3 py-3 font-mono text-xs leading-relaxed text-primary shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40"
+            />
+            {isStreaming && (
+              <div className="mt-1 flex items-center gap-2 text-xs text-secondary">
+                <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Streaming from Claude…
+              </div>
+            )}
+          </div>
+        )}
+
+        {fields && (
+          <details className="mt-4 text-xs text-secondary">
+            <summary className="cursor-pointer font-medium text-primary">Extracted fields</summary>
+            <dl className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
+              <div className="flex gap-2">
+                <dt className="font-medium">Tenant:</dt>
+                <dd>{fields.tenant_name}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="font-medium">Unit:</dt>
+                <dd>{fields.unit}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="font-medium">Address:</dt>
+                <dd>{fields.address}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="font-medium">BBL:</dt>
+                <dd>{fields.bbl}</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="font-medium">Legal rent:</dt>
+                <dd>${fields.legal_rent_monthly.toFixed(2)}/mo</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="font-medium">Actual rent:</dt>
+                <dd>${fields.actual_rent_monthly.toFixed(2)}/mo</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="font-medium">Overcharge:</dt>
+                <dd>${fields.overcharge_monthly.toFixed(2)}/mo</dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="font-medium">6-year total:</dt>
+                <dd>${fields.overcharge_total_within_limit.toFixed(2)}</dd>
+              </div>
+            </dl>
+          </details>
+        )}
+
+        <p className="mt-4 text-xs text-muted">
+          File your completed complaint with the DHCR Office of Rent Administration. Get the
+          official{' '}
+          <a
+            href="https://hcr.ny.gov/form-ra-89"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-accent"
+          >
+            Form RA-89 (and RA-89.1)
+          </a>
+          , or file online via{' '}
+          <a
+            href="https://rent.hcr.ny.gov/RentConnect/Tenant/RentOverchargeOverview"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-accent"
+          >
+            DHCR Rent Connect
+          </a>
+          .
+        </p>
+      </div>
     </div>
   );
 }

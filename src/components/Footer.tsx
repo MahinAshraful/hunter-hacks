@@ -2,9 +2,9 @@ import Link from 'next/link';
 
 export default function Footer() {
   return (
-    <footer className="mt-16 border-t border-gray-200 bg-white">
-      <div className="mx-auto max-w-3xl px-4 py-8 text-xs text-gray-500">
-        <p className="font-medium text-gray-700">
+    <footer className="mt-16 border-t border-border bg-surface-muted">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 text-xs text-secondary">
+        <p className="font-medium text-primary">
           Not legal advice. Estimates only.
         </p>
         <p className="mt-2">
@@ -15,17 +15,17 @@ export default function Footer() {
           DHCR and consider speaking with a tenant attorney before filing.
         </p>
         <div className="mt-4 flex flex-wrap gap-4">
-          <Link href="/" className="hover:text-gray-700">
+          <Link href="/" className="hover:text-accent">
             Home
           </Link>
-          <Link href="/about" className="hover:text-gray-700">
+          <Link href="/about" className="hover:text-accent">
             About
           </Link>
           <a
             href="https://hcr.ny.gov/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-gray-700"
+            className="hover:text-accent"
           >
             DHCR (hcr.ny.gov)
           </a>
@@ -33,7 +33,7 @@ export default function Footer() {
             href="https://www.nycdb.info/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-gray-700"
+            className="hover:text-accent"
           >
             NYCDB
           </a>

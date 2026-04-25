@@ -87,26 +87,40 @@ export default function Home() {
   const showForm = lookup?.status === 'likely_stabilized';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-          NYC Rent Stabilization Lookup
-        </h1>
-        <p className="mt-2 text-sm text-gray-500">
-          Search any NYC address. If the building is rent-stabilized, enter your lease history to
-          estimate whether you&apos;ve been overcharged.
-        </p>
+    <div className="min-h-screen bg-background">
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16">
+        <div className="max-w-2xl mx-auto text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-primary">
+            NYC Rent Stabilization Lookup
+          </h1>
+          <p className="mt-3 text-base text-secondary">
+            Search any NYC address. If the building is rent-stabilized, enter your lease history to
+            estimate whether you&apos;ve been overcharged.
+          </p>
 
-        <div className="mt-8">
-          <AddressSearch onSelect={handleSelect} disabled={isLooking} />
-          <DemoAddresses onSelect={handleSelect} disabled={isLooking} />
+          <div className="mt-8">
+            <AddressSearch onSelect={handleSelect} disabled={isLooking} />
+            <DemoAddresses onSelect={handleSelect} disabled={isLooking} />
+          </div>
         </div>
 
         {isLooking && (
-          <p className="mt-4 text-sm text-gray-400">Looking up stabilization status…</p>
+          <div className="mt-8 rounded-xl border border-border bg-surface p-6 shadow-sm">
+            <div className="h-4 w-48 rounded bg-surface-muted animate-pulse" />
+            <div className="mt-3 h-3 w-72 rounded bg-surface-muted animate-pulse" />
+            <div className="mt-2 h-3 w-64 rounded bg-surface-muted animate-pulse" />
+            <div className="mt-4 flex gap-4">
+              <div className="h-3 w-32 rounded bg-surface-muted animate-pulse" />
+              <div className="h-3 w-28 rounded bg-surface-muted animate-pulse" />
+            </div>
+          </div>
         )}
 
-        {lookupError && <p className="mt-4 text-sm text-red-600">{lookupError}</p>}
+        {lookupError && (
+          <div className="mt-6 rounded-lg border border-danger-border bg-danger-bg p-4">
+            <p className="text-sm text-danger">{lookupError}</p>
+          </div>
+        )}
 
         {lookup && selectedResult && (
           <ResultCard
@@ -122,10 +136,21 @@ export default function Home() {
         )}
 
         {isEstimating && (
-          <p className="mt-4 text-sm text-gray-400">Crunching RGB increases…</p>
+          <div className="mt-8 rounded-xl border border-border bg-surface p-6 shadow-sm">
+            <div className="h-4 w-56 rounded bg-surface-muted animate-pulse" />
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              <div className="h-16 rounded-lg bg-surface-muted animate-pulse" />
+              <div className="h-16 rounded-lg bg-surface-muted animate-pulse" />
+              <div className="h-16 rounded-lg bg-surface-muted animate-pulse" />
+            </div>
+          </div>
         )}
 
-        {estimateError && <p className="mt-4 text-sm text-red-600">{estimateError}</p>}
+        {estimateError && (
+          <div className="mt-6 rounded-lg border border-danger-border bg-danger-bg p-4">
+            <p className="text-sm text-danger">{estimateError}</p>
+          </div>
+        )}
 
         {estimate && <OverchargeSummary estimate={estimate} />}
 

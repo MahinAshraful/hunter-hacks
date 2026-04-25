@@ -10,15 +10,15 @@ export const metadata = {
 export default function AboutPage() {
   return (
     <>
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <Link href="/" className="text-sm text-blue-600 hover:text-blue-800">
-          ← Back
+      <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
+        <Link href="/" className="text-sm text-accent hover:text-accent-hover">
+          &larr; Back
         </Link>
 
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="mt-4 text-4xl font-bold tracking-tight text-primary">
           About this tool
         </h1>
-        <p className="mt-3 text-sm text-gray-600">
+        <p className="mt-3 text-sm text-secondary">
           NYC has roughly one million rent-stabilized apartments, and many
           tenants don&apos;t know they live in one. This tool answers two
           questions: <em>is my building rent-stabilized?</em> and{' '}
@@ -27,11 +27,11 @@ export default function AboutPage() {
         </p>
 
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-gray-900">What it is</h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-700">
+          <h2 className="text-lg font-semibold text-primary">What it is</h2>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-secondary">
             <li>
               A free tenant-facing lookup against the NYCDB{' '}
-              <code className="rounded bg-gray-100 px-1 py-0.5 text-xs">
+              <code className="rounded bg-surface-muted px-1 py-0.5 text-xs">
                 rentstab_v2
               </code>{' '}
               dataset (a community-maintained scrape of NYC tax-bill PDFs that
@@ -48,7 +48,7 @@ export default function AboutPage() {
                 href="https://hcr.ny.gov/form-ra-89"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline hover:text-blue-800"
+                className="text-accent underline hover:text-accent-hover"
               >
                 DHCR Form RA-89
               </a>{' '}
@@ -59,10 +59,10 @@ export default function AboutPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-primary">
             What it isn&apos;t
           </h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-700">
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-secondary">
             <li>
               <strong>Not legal advice.</strong> A real overcharge case may
               involve MCI (Major Capital Improvement) and IAI (Individual
@@ -77,7 +77,7 @@ export default function AboutPage() {
                 href="https://hcr.ny.gov/records-access"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline hover:text-blue-800"
+                className="text-accent underline hover:text-accent-hover"
               >
                 DHCR Records Access (Form REC-1)
               </a>
@@ -93,15 +93,15 @@ export default function AboutPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-gray-900">How it works</h2>
-          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-gray-700">
+          <h2 className="text-lg font-semibold text-primary">How it works</h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-secondary">
             <li>
               Address autocomplete is powered by{' '}
               <a
                 href="https://geosearch.planninglabs.nyc/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline hover:text-blue-800"
+                className="text-accent underline hover:text-accent-hover"
               >
                 NYC Planning Labs GeoSearch
               </a>
@@ -115,7 +115,7 @@ export default function AboutPage() {
             </li>
             <li>
               If you enter a lease history, we apply RGB Apartment Orders
-              #1–#57 to compute the legal renewal rent and flag any year where
+              #1&#x2013;#57 to compute the legal renewal rent and flag any year where
               the actual rent exceeded it.
             </li>
             <li>
@@ -127,14 +127,14 @@ export default function AboutPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-lg font-semibold text-gray-900">Get help</h2>
-          <p className="mt-3 text-sm text-gray-700">
+          <h2 className="text-lg font-semibold text-primary">Get help</h2>
+          <p className="mt-3 text-sm text-secondary">
             If this tool surfaces an overcharge, consider contacting{' '}
             <a
               href="https://www.metcouncilonhousing.org/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 underline hover:text-blue-800"
+              className="text-accent underline hover:text-accent-hover"
             >
               Met Council on Housing
             </a>{' '}
@@ -143,7 +143,7 @@ export default function AboutPage() {
               href="https://www.lawhelpny.org/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 underline hover:text-blue-800"
+              className="text-accent underline hover:text-accent-hover"
             >
               LawHelpNY
             </a>{' '}

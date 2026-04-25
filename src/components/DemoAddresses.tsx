@@ -8,9 +8,6 @@ type Props = {
   disabled?: boolean;
 };
 
-// Pre-war Manhattan rental addresses we expect to surface in the NYCDB
-// rentstab seed. If a chosen address doesn't resolve to a stabilized
-// building in the local DB during a demo, swap it for one that does.
 const DEMO_ADDRESSES = [
   '350 West 50th Street, Manhattan',
   '207 West 106th Street, Manhattan',
@@ -38,8 +35,8 @@ export default function DemoAddresses({ onSelect, disabled }: Props) {
   }
 
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-gray-500">Try a demo address:</span>
+    <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
+      <span className="text-secondary">Try a demo address:</span>
       {DEMO_ADDRESSES.map((addr) => {
         const isLoading = loadingAddr === addr;
         const short = addr.replace(', Manhattan', '');
@@ -49,13 +46,13 @@ export default function DemoAddresses({ onSelect, disabled }: Props) {
             type="button"
             onClick={() => handleClick(addr)}
             disabled={disabled || loadingAddr !== null}
-            className="rounded-full border border-gray-300 bg-white px-3 py-1 font-medium text-gray-700 shadow-sm hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-secondary shadow-sm transition-colors duration-150 hover:border-accent hover:bg-accent-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading ? 'Loading…' : short}
           </button>
         );
       })}
-      {error && <span className="text-red-600">{error}</span>}
+      {error && <span className="text-danger">{error}</span>}
     </div>
   );
 }
