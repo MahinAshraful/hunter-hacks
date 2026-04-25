@@ -97,14 +97,14 @@ test('overcharge: with registered base rent walks forward from base', () => {
   near(result.overcharge_total_within_limit, 67.5 * 12, 5);
 });
 
-test('overcharge: pre-statute leases do not count toward 4-year window total', () => {
-  // asOfDate = 2026-04-25 → statute starts 2022-04-25.
-  // Lease 1 (2018-19) is baseline. Lease 2 (2019-20) is overcharged but pre-statute.
+test('overcharge: pre-statute leases do not count toward 6-year window total', () => {
+  // asOfDate = 2026-04-25 → 6-year statute starts 2020-04-25.
+  // Lease 1 (2017-18) is baseline. Lease 2 (2018-19) is overcharged but pre-statute.
   // Lease 3 (2023-24) is overcharged and inside the window.
   const input: EstimateInput = {
     history: [
-      { startDate: '2018-10-01', endDate: '2019-09-30', monthlyRent: 1500, leaseTermMonths: 12 },
-      { startDate: '2019-10-01', endDate: '2020-09-30', monthlyRent: 1700, leaseTermMonths: 12 },
+      { startDate: '2017-10-01', endDate: '2018-09-30', monthlyRent: 1500, leaseTermMonths: 12 },
+      { startDate: '2018-10-01', endDate: '2019-09-30', monthlyRent: 1700, leaseTermMonths: 12 },
       { startDate: '2023-10-01', endDate: '2024-09-30', monthlyRent: 1800, leaseTermMonths: 12 },
     ],
     asOfDate: ASOF_TODAY,
@@ -112,7 +112,7 @@ test('overcharge: pre-statute leases do not count toward 4-year window total', (
   const result = estimate(input);
   assert.equal(result.years_analyzed.length, 2);
 
-  // Year 2 (2019-10): pre-statute. Has overcharge but window-clipped to 0.
+  // Year 2 (2018-10): pre-statute. Has overcharge but window-clipped to 0.
   const y2 = result.years_analyzed[0];
   assert.ok(y2.overcharge_monthly > 0, 'year 2 should show monthly overcharge');
   assert.equal(y2.months_within_limit, 0);

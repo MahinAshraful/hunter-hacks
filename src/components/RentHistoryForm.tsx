@@ -174,7 +174,7 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
           />
           <span className="text-sm text-gray-700">
             <span className="font-medium">I have a registered base rent</span> from a DHCR rent
-            history (Form RA-90). Adding this gives a more reliable estimate.
+            history (Records Access, Form REC-1). Adding this gives a more reliable estimate.
           </span>
         </label>
         {includeBase && (

@@ -5,6 +5,7 @@ import AddressSearch from '@/components/AddressSearch';
 import ResultCard from '@/components/ResultCard';
 import RentHistoryForm from '@/components/RentHistoryForm';
 import OverchargeSummary from '@/components/OverchargeSummary';
+import ComplaintPreview from '@/components/ComplaintPreview';
 import type { GeoResult } from '@/lib/geosearch';
 import type { Verdict } from '@/lib/stabilization';
 import type { Estimate, LeaseEntry, BaseRent } from '@/lib/overcharge';
@@ -119,6 +120,14 @@ export default function Home() {
         {estimateError && <p className="mt-4 text-sm text-red-600">{estimateError}</p>}
 
         {estimate && <OverchargeSummary estimate={estimate} />}
+
+        {estimate && lookup?.status === 'likely_stabilized' && selectedResult && (
+          <ComplaintPreview
+            verdict={lookup}
+            estimate={estimate}
+            address={selectedResult.label}
+          />
+        )}
       </main>
     </div>
   );
