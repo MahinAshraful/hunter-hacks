@@ -79,14 +79,7 @@ export default function ResultCard({ verdict, address }: Props) {
         {verdict.status !== 'unknown' && (
           <>
             <div className="my-5 rule" />
-            <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-              {verdict.unit_count_latest !== undefined && (
-                <DataPoint
-                  label="Stabilized units"
-                  value={String(verdict.unit_count_latest)}
-                  hint={verdict.unit_count_year ? `as of ${verdict.unit_count_year}` : undefined}
-                />
-              )}
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
               <DataPoint
                 label="On DHCR list"
                 value={verdict.on_dhcr_list_latest ? 'Yes' : 'No'}
