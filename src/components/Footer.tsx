@@ -8,7 +8,7 @@ export default function Footer() {
           <div className="md:col-span-2">
             <span className="eyebrow">Colophon</span>
             <p className="mt-2 font-display text-lg text-ink-text leading-snug">
-              Ledger is an editorial lookup tool for the roughly one&nbsp;million rent-stabilized apartments in New York City.
+              <span className="italic">Am I Rent Stabilized?</span> is a free tenant lookup for the roughly one&nbsp;million rent-stabilized apartments in New York City.
             </p>
             <p className="mt-2 text-xs text-secondary leading-relaxed max-w-2xl">
               Surfaces public DHCR / NYCDB rent-stabilization data and computes an indicative
@@ -66,7 +66,7 @@ export default function Footer() {
 
         <div className="mt-8 pt-6 border-t border-rule flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[11px] text-muted">
           <span className="font-display italic">An aerial view of every NYC building.</span>
-          <span className="font-mono">© {new Date().getFullYear()} · Ledger NYC</span>
+          <span className="font-mono">© {new Date().getFullYear()} · amirentstabilized.nyc</span>
         </div>
       </div>
     </footer>

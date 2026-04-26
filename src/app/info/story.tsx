@@ -667,14 +667,14 @@ export default function InfoStory() {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/80 border-b border-rule">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="relative flex h-7 w-7 items-center justify-center rounded-md bg-ink text-brass-glow font-display font-bold text-sm">
-              L
+            <span className="relative flex h-7 w-7 items-center justify-center rounded-md bg-ink text-brass-glow font-display font-bold text-base leading-none">
+              ?
             </span>
-            <span className="font-display text-[19px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep">
-              Ledger
+            <span className="font-display text-[17px] sm:text-[19px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep">
+              Am I Rent Stabilized
             </span>
-            <span className="hidden sm:inline-block ml-1 text-[10px] tracking-[0.18em] uppercase text-muted font-semibold">
-              NYC
+            <span className="hidden sm:inline-block ml-1 text-[10px] tracking-[0.18em] uppercase text-muted font-semibold font-mono">
+              .nyc
             </span>
           </Link>
           <Link
@@ -699,7 +699,7 @@ export default function InfoStory() {
             <span className="h-px w-6 bg-brass" /> Vol. I · Field Notes
             <span className="h-px flex-1 bg-rule max-w-[120px]" />
             <span className="font-mono text-[10px] text-muted normal-case tracking-normal">
-              Ledger NYC · Editorial
+              amirentstabilized.nyc · Editorial
             </span>
           </span>
           <h1 className="mt-5 font-display text-[48px] sm:text-[72px] lg:text-[92px] leading-[0.93] tracking-[-0.022em] text-ink-text">
@@ -812,7 +812,8 @@ export default function InfoStory() {
           A free, tenant-first lookup for the apartments NYC keeps quiet.
         </h2>
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-secondary">
-          Ledger answers two questions: <em>is my building rent-stabilized?</em> and{' '}
+          <span className="font-display italic">amirentstabilized.nyc</span> answers two questions:{' '}
+          <em>is my building rent-stabilized?</em> and{' '}
           <em>given my lease history, am I being overcharged?</em> If the answer to the second is
           yes, it drafts a complaint you can take to DHCR.
         </p>
@@ -921,7 +922,7 @@ export default function InfoStory() {
           <SourceLine
             href="https://hcr.ny.gov/form-ra-89"
             title="DHCR Form RA-89"
-            note="Tenant's Complaint of Rent Overcharges — the form Ledger drafts for you."
+            note="Tenant's Complaint of Rent Overcharges — the form this site drafts for you."
           />
           <SourceLine
             href="https://www.metcouncilonhousing.org/"

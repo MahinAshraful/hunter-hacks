@@ -203,15 +203,15 @@ export default function Home() {
             className="flex items-center gap-2.5 group"
             aria-label="Home"
           >
-            <span className="relative flex h-7 w-7 items-center justify-center rounded-md bg-ink text-brass-glow font-display font-bold text-sm">
-              L
+            <span className="relative flex h-7 w-7 items-center justify-center rounded-md bg-ink text-brass-glow font-display font-bold text-base leading-none">
+              ?
               <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-brass animate-brass-pulse" />
             </span>
-            <span className="font-display text-[19px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep transition-colors">
-              Ledger
+            <span className="font-display text-[17px] sm:text-[19px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep transition-colors">
+              Am I Rent Stabilized
             </span>
-            <span className="hidden sm:inline-block ml-1 text-[10px] tracking-[0.18em] uppercase text-muted font-semibold">
-              NYC
+            <span className="hidden sm:inline-block ml-1 text-[10px] tracking-[0.18em] uppercase text-muted font-semibold font-mono">
+              .nyc
             </span>
           </button>
 
