@@ -216,7 +216,7 @@ export default function Home() {
           </button>
 
           <nav className="flex items-center gap-1 sm:gap-3 text-sm">
-            <Link href="/about" className="px-3 py-1.5 text-secondary hover:text-brass-deep">About</Link>
+            <Link href="/info" className="px-3 py-1.5 text-secondary hover:text-brass-deep">Info</Link>
             <a
               href="https://hcr.ny.gov/"
               target="_blank"
