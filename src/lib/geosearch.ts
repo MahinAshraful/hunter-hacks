@@ -1,6 +1,7 @@
 export type GeoResult = {
   label: string;
   bbl: string;
+  bin?: string;       // NYC Building Identification Number — keys the official footprint
   lat: number;
   lng: number;
 };
@@ -11,6 +12,7 @@ type GeoFeature = {
     addendum?: {
       pad?: {
         bbl?: string;
+        bin?: string;
       };
     };
   };
@@ -35,6 +37,7 @@ export async function autocomplete(text: string): Promise<GeoResult[]> {
       .map((f) => ({
         label: f.properties.label,
         bbl: f.properties.addendum!.pad!.bbl!,
+        bin: f.properties.addendum?.pad?.bin,
         lat: f.geometry.coordinates[1],
         lng: f.geometry.coordinates[0],
       }));

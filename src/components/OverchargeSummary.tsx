@@ -6,124 +6,223 @@ type Props = {
 
 const fmt = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-
 const fmtCents = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
-
 const fmtPct = (n: number | null) => (n === null ? '—' : `${n.toFixed(2)}%`);
 
 export default function OverchargeSummary({ estimate }: Props) {
   const hasOvercharge = estimate.overcharge_total_within_limit > 0;
-  const stripColor = hasOvercharge ? 'bg-danger' : 'bg-success';
-  const badgeBg = hasOvercharge ? 'bg-danger-bg text-danger' : 'bg-success-bg text-success';
-  const headline = hasOvercharge
-    ? `You may have been overcharged ${fmt(estimate.overcharge_total_within_limit)} in the last 6 years.`
-    : 'No overcharge detected in the last 6 years.';
+  const stripBg = hasOvercharge ? 'bg-rust' : 'bg-verdigris';
+  const pillBg = hasOvercharge ? 'bg-rust' : 'bg-verdigris';
+  const pillText = 'text-bone';
 
   return (
-    <div className="mt-8 rounded-xl border border-border bg-surface shadow-sm overflow-hidden animate-fade-in-up">
-      <div className={`h-1.5 ${stripColor}`} />
-      <div className="p-6">
-        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${badgeBg}`}>
-          {hasOvercharge ? 'Overcharge detected' : 'No overcharge'}
-        </span>
-        <h2 className="mt-3 text-lg font-semibold text-primary">{headline}</h2>
+    <section className="paper relative overflow-hidden animate-fade-in-up">
+      <div className={`absolute inset-x-0 top-0 h-[3px] ${stripBg}`} />
+      <div className="px-6 sm:px-8 pt-6 pb-7">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <span className="eyebrow">Section III · Estimate</span>
+            <h2 className="mt-1.5 font-display text-[28px] sm:text-[32px] leading-[1.05] tracking-tight text-ink-text">
+              {hasOvercharge ? (
+                <>
+                  <span className="block text-secondary text-base font-sans tracking-normal mb-1">
+                    Across the last 6 years, you may have been overcharged
+                  </span>
+                  <span className="text-rust tabular">{fmt(estimate.overcharge_total_within_limit)}</span>
+                </>
+              ) : (
+                <>
+                  <span className="block text-secondary text-base font-sans tracking-normal mb-1">
+                    No overcharge detected
+                  </span>
+                  <span className="text-verdigris">All within RGB increase limits.</span>
+                </>
+              )}
+            </h2>
+          </div>
+          <span className={`flex-shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${pillBg} ${pillText}`}>
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {hasOvercharge ? 'Overcharge' : 'Within bounds'}
+          </span>
+        </div>
 
-        <dl className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-lg bg-surface-muted p-4">
-            <dt className="text-xs uppercase tracking-wide text-secondary">Your current rent</dt>
-            <dd className="mt-1 text-xl font-semibold text-primary">
-              {fmtCents(estimate.actual_rent_monthly)}/mo
-            </dd>
-          </div>
-          <div className="rounded-lg bg-surface-muted p-4">
-            <dt className="text-xs uppercase tracking-wide text-secondary">Estimated legal rent</dt>
-            <dd className="mt-1 text-xl font-semibold text-primary">
-              {fmtCents(estimate.legal_rent_monthly)}/mo
-            </dd>
-          </div>
-          <div className="rounded-lg bg-surface-muted p-4">
-            <dt className="text-xs uppercase tracking-wide text-secondary">Monthly overcharge</dt>
-            <dd className={`mt-1 text-xl font-semibold ${hasOvercharge ? 'text-danger' : 'text-primary'}`}>
-              {fmtCents(estimate.overcharge_monthly)}/mo
-            </dd>
-          </div>
-        </dl>
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-px bg-rule rounded-[10px] overflow-hidden border border-rule">
+          <Stat
+            label="Your current rent"
+            value={fmtCents(estimate.actual_rent_monthly)}
+            unit="/mo"
+          />
+          <Stat
+            label="Estimated legal rent"
+            value={fmtCents(estimate.legal_rent_monthly)}
+            unit="/mo"
+            tone="brass"
+          />
+          <Stat
+            label="Monthly overcharge"
+            value={fmtCents(estimate.overcharge_monthly)}
+            unit="/mo"
+            tone={hasOvercharge ? 'rust' : 'muted'}
+          />
+        </div>
 
         {estimate.years_analyzed.length > 0 && (
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-secondary">
-                  <th className="py-2 pr-3">Lease start</th>
-                  <th className="py-2 pr-3">Term</th>
-                  <th className="py-2 pr-3 text-right">Allowed %</th>
-                  <th className="py-2 pr-3 text-right">Actual %</th>
-                  <th className="py-2 pr-3 text-right">Legal rent</th>
-                  <th className="py-2 pr-3 text-right">Actual rent</th>
-                  <th className="py-2 pr-3 text-right">Overcharge / mo</th>
-                  <th className="py-2 text-right">Within 6-yr window</th>
-                </tr>
-              </thead>
-              <tbody>
-                {estimate.years_analyzed.map((y) => (
-                  <tr key={y.lease_start} className="border-b border-border/50">
-                    <td className="py-2 pr-3 text-primary">{y.lease_start}</td>
-                    <td className="py-2 pr-3 text-primary">
-                      {y.term_months === 24 ? '2-yr' : '1-yr'}
-                    </td>
-                    <td className="py-2 pr-3 text-right text-primary">{fmtPct(y.allowed_pct)}</td>
-                    <td className="py-2 pr-3 text-right text-primary">{fmtPct(y.actual_pct)}</td>
-                    <td className="py-2 pr-3 text-right text-primary">{fmtCents(y.legal_monthly)}</td>
-                    <td className="py-2 pr-3 text-right text-primary">{fmtCents(y.actual_monthly)}</td>
-                    <td
-                      className={`py-2 pr-3 text-right ${
-                        y.overcharge_monthly > 0 ? 'font-semibold text-danger' : 'text-muted'
-                      }`}
-                    >
-                      {y.overcharge_monthly > 0 ? fmtCents(y.overcharge_monthly) : '—'}
-                    </td>
-                    <td
-                      className={`py-2 text-right ${
-                        y.overcharge_within_limit > 0 ? 'font-semibold text-danger' : 'text-muted'
-                      }`}
-                    >
-                      {y.overcharge_within_limit > 0 ? fmtCents(y.overcharge_within_limit) : '—'}
-                    </td>
+          <div className="mt-6">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="eyebrow">Per-renewal breakdown</span>
+              <span className="h-px flex-1 bg-rule" />
+            </div>
+            <div className="overflow-x-auto rounded-[10px] border border-rule bg-paper-soft">
+              <table className="w-full border-collapse text-sm tabular">
+                <thead>
+                  <tr className="text-left">
+                    <Th>Lease start</Th>
+                    <Th>Term</Th>
+                    <Th align="right">Allowed</Th>
+                    <Th align="right">Actual</Th>
+                    <Th align="right">Legal rent</Th>
+                    <Th align="right">Actual rent</Th>
+                    <Th align="right">Overcharge / mo</Th>
+                    <Th align="right">In 6-yr window</Th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {estimate.years_analyzed.map((y, idx) => {
+                    const over = y.overcharge_monthly > 0;
+                    const inWindow = y.overcharge_within_limit > 0;
+                    return (
+                      <tr
+                        key={y.lease_start}
+                        className={`border-t border-rule/70 ${idx % 2 === 0 ? 'bg-bone/40' : ''}`}
+                      >
+                        <Td>{y.lease_start}</Td>
+                        <Td>{y.term_months === 24 ? '2-yr' : '1-yr'}</Td>
+                        <Td align="right">{fmtPct(y.allowed_pct)}</Td>
+                        <Td align="right" className={
+                          y.actual_pct !== null && y.allowed_pct !== null && y.actual_pct > y.allowed_pct
+                            ? 'text-rust font-semibold' : ''
+                        }>{fmtPct(y.actual_pct)}</Td>
+                        <Td align="right">{fmtCents(y.legal_monthly)}</Td>
+                        <Td align="right">{fmtCents(y.actual_monthly)}</Td>
+                        <Td align="right" className={over ? 'text-rust font-semibold' : 'text-muted'}>
+                          {over ? fmtCents(y.overcharge_monthly) : '—'}
+                        </Td>
+                        <Td align="right" className={inWindow ? 'text-rust font-semibold' : 'text-muted'}>
+                          {inWindow ? fmtCents(y.overcharge_within_limit) : '—'}
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {estimate.caveats.length > 0 && (
-          <details className="mt-4 text-xs text-secondary">
-            <summary className="cursor-pointer font-medium text-primary">
-              Caveats and assumptions
+          <details className="mt-5 group">
+            <summary className="cursor-pointer flex items-center gap-2 text-xs">
+              <span className="eyebrow">Caveats and assumptions</span>
+              <span className="h-px flex-1 bg-rule" />
+              <span className="text-muted text-[10px]">{estimate.caveats.length} notes</span>
+              <svg className="h-3 w-3 text-muted transition-transform group-open:rotate-180" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M3 5l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </summary>
-            <ul className="mt-2 list-disc space-y-1 pl-5">
+            <ul className="mt-2 space-y-1.5 pl-1">
               {estimate.caveats.map((c, i) => (
-                <li key={i}>{c}</li>
+                <li key={i} className="flex gap-2 text-xs text-secondary leading-relaxed">
+                  <span className="text-brass mt-0.5 flex-shrink-0">§</span>
+                  <span>{c}</span>
+                </li>
               ))}
             </ul>
           </details>
         )}
 
-        <p className="mt-4 text-xs text-muted">
-          Estimate only — not legal advice. The DHCR is the authoritative source. To anchor on a
-          registered base rent, request your apartment rent history from DHCR{' '}
+        <p className="mt-5 text-[11px] leading-relaxed text-muted">
+          Estimate only — not legal advice. To anchor on a registered base rent, request your
+          apartment’s rent history via{' '}
           <a
             href="https://hcr.ny.gov/records-access"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-accent"
+            className="underline decoration-brass/40 underline-offset-2 hover:text-brass-deep hover:decoration-brass"
           >
-            Records Access (Form REC-1)
+            DHCR Records Access (Form REC-1)
           </a>
           .
         </p>
       </div>
+    </section>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  unit,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  tone?: 'default' | 'brass' | 'rust' | 'muted';
+}) {
+  const valueClass =
+    tone === 'rust'
+      ? 'text-rust'
+      : tone === 'brass'
+      ? 'text-brass-deep'
+      : tone === 'muted'
+      ? 'text-muted'
+      : 'text-ink-text';
+  return (
+    <div className="bg-bone p-4">
+      <div className="eyebrow">{label}</div>
+      <div className={`mt-1.5 font-display text-[26px] leading-none tabular ${valueClass}`}>
+        {value}
+        {unit && <span className="font-sans text-sm text-muted font-normal ml-0.5">{unit}</span>}
+      </div>
     </div>
+  );
+}
+
+function Th({
+  children,
+  align = 'left',
+}: {
+  children: React.ReactNode;
+  align?: 'left' | 'right';
+}) {
+  return (
+    <th
+      className={`px-3 py-2 eyebrow font-semibold text-[10px] ${
+        align === 'right' ? 'text-right' : 'text-left'
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  align = 'left',
+  className = '',
+}: {
+  children: React.ReactNode;
+  align?: 'left' | 'right';
+  className?: string;
+}) {
+  return (
+    <td
+      className={`px-3 py-2 text-ink-text ${
+        align === 'right' ? 'text-right' : 'text-left'
+      } ${className}`}
+    >
+      {children}
+    </td>
   );
 }

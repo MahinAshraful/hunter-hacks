@@ -8,10 +8,10 @@ type Props = {
   disabled?: boolean;
 };
 
-const DEMO_ADDRESSES = [
-  '350 West 50th Street, Manhattan',
-  '207 West 106th Street, Manhattan',
-  '165 East 35th Street, Manhattan',
+const DEMO_ADDRESSES: { full: string; tag: string; hint: string }[] = [
+  { full: '350 West 50th Street, Manhattan',  tag: '350 W 50th',  hint: 'Hell’s Kitchen — pre-war' },
+  { full: '207 West 106th Street, Manhattan', tag: '207 W 106th', hint: 'Upper West Side — UWS' },
+  { full: '165 East 35th Street, Manhattan',  tag: '165 E 35th',  hint: 'Murray Hill — mid-rise' },
 ];
 
 export default function DemoAddresses({ onSelect, disabled }: Props) {
@@ -25,7 +25,7 @@ export default function DemoAddresses({ onSelect, disabled }: Props) {
       const results = await autocomplete(query);
       const match = results[0];
       if (!match) {
-        setError(`Couldn't resolve "${query}" — try typing it manually.`);
+        setError(`Couldn't resolve "${query}".`);
         return;
       }
       onSelect(match);
@@ -35,24 +35,31 @@ export default function DemoAddresses({ onSelect, disabled }: Props) {
   }
 
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs">
-      <span className="text-secondary">Try a demo address:</span>
-      {DEMO_ADDRESSES.map((addr) => {
-        const isLoading = loadingAddr === addr;
-        const short = addr.replace(', Manhattan', '');
-        return (
-          <button
-            key={addr}
-            type="button"
-            onClick={() => handleClick(addr)}
-            disabled={disabled || loadingAddr !== null}
-            className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-secondary shadow-sm transition-colors duration-150 hover:border-accent hover:bg-accent-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isLoading ? 'Loading…' : short}
-          </button>
-        );
-      })}
-      {error && <span className="text-danger">{error}</span>}
+    <div className="mt-5">
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="eyebrow">Or try one</span>
+        <span className="h-px flex-1 bg-rule" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {DEMO_ADDRESSES.map((d) => {
+          const isLoading = loadingAddr === d.full;
+          return (
+            <button
+              key={d.full}
+              type="button"
+              onClick={() => handleClick(d.full)}
+              disabled={disabled || loadingAddr !== null}
+              className="group flex flex-col items-start gap-0.5 rounded-[10px] border border-rule bg-bone px-3 py-2.5 text-left transition-all hover:border-brass hover:bg-brass-wash hover:-translate-y-px hover:shadow-[0_8px_20px_-12px_rgba(176,122,26,0.4)] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <span className="font-display text-sm font-semibold text-ink-text group-hover:text-brass-deep">
+                {isLoading ? 'Loading…' : d.tag}
+              </span>
+              <span className="text-[11px] text-muted leading-tight">{d.hint}</span>
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className="mt-2 text-xs text-rust">{error}</p>}
     </div>
   );
 }
