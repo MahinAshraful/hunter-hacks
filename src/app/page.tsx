@@ -437,7 +437,12 @@ export default function Home() {
 
         {estimate && visibleLookup?.status === 'likely_stabilized' && selectedResult && (
           <div ref={draftRef}>
-            <ComplaintPreview verdict={visibleLookup} estimate={estimate} address={selectedResult.label} />
+            <ComplaintPreview
+              verdict={visibleLookup}
+              estimate={estimate}
+              address={selectedResult.label}
+              bin={selectedResult.bin}
+            />
           </div>
         )}
       </section>
