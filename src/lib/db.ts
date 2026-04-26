@@ -6,6 +6,14 @@ import * as schema from "./schema";
 
 const DB_PATH = process.env.APP_DB_PATH ?? path.join(process.cwd(), "data", "app.db");
 
+// On Vercel (and any serverless platform with a read-only filesystem),
+// open the DB in true read-only mode. WAL is also disabled there because
+// setting `journal_mode = WAL` writes to the file header, which the
+// read-only FS rejects. The lookups-table inserts in /api/lookup and
+// /api/estimate are already wrapped in try/catch, so they fail silently
+// in production — analytics row, not load-bearing.
+const READONLY = process.env.VERCEL === "1" || process.env.APP_DB_READONLY === "1";
+
 let _sqlite: Database.Database | null = null;
 let _db: BetterSQLite3Database<typeof schema> | null = null;
 
@@ -16,9 +24,12 @@ function ensureDir(filePath: string) {
 
 export function getSqlite(): Database.Database {
   if (_sqlite) return _sqlite;
-  ensureDir(DB_PATH);
-  _sqlite = new Database(DB_PATH);
-  _sqlite.pragma("journal_mode = WAL");
+  if (!READONLY) ensureDir(DB_PATH);
+  _sqlite = new Database(
+    DB_PATH,
+    READONLY ? { readonly: true, fileMustExist: true } : {},
+  );
+  if (!READONLY) _sqlite.pragma("journal_mode = WAL");
   _sqlite.pragma("foreign_keys = ON");
   return _sqlite;
 }
