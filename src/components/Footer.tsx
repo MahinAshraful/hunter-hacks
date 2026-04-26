@@ -23,7 +23,7 @@ export default function Footer() {
               <span className="eyebrow">Site</span>
               <ul className="mt-2 space-y-1.5">
                 <li><Link href="/" className="text-secondary hover:text-brass-deep">Home</Link></li>
-                <li><Link href="/about" className="text-secondary hover:text-brass-deep">About</Link></li>
+                <li><Link href="/info" className="text-secondary hover:text-brass-deep">Info</Link></li>
               </ul>
             </div>
             <div>
