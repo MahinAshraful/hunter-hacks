@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { verdict } from '@/lib/stabilization';
-import { getDb } from '@/lib/db';
+import { debugDbBundle, getDb } from '@/lib/db';
 import { lookups } from '@/lib/schema';
 
 const RequestSchema = z.object({
@@ -30,18 +30,18 @@ export async function POST(request: Request): Promise<Response> {
   try {
     result = verdict(bbl);
   } catch (err) {
-    // Surface the actual error in Vercel function logs so 500s aren't blind.
+    const debug = debugDbBundle();
     console.error('verdict() failed:', {
       bbl,
-      cwd: process.cwd(),
-      vercel: process.env.VERCEL,
       message: err instanceof Error ? err.message : String(err),
       stack: err instanceof Error ? err.stack : undefined,
+      debug,
     });
     return Response.json(
       {
-        error: 'Lookup failed — check server logs',
+        error: 'Lookup failed',
         message: err instanceof Error ? err.message : String(err),
+        debug,
       },
       { status: 500 },
     );
