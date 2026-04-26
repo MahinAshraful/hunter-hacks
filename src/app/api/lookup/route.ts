@@ -25,7 +25,27 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const { bbl } = parsed.data;
-  const result = verdict(bbl);
+
+  let result;
+  try {
+    result = verdict(bbl);
+  } catch (err) {
+    // Surface the actual error in Vercel function logs so 500s aren't blind.
+    console.error('verdict() failed:', {
+      bbl,
+      cwd: process.cwd(),
+      vercel: process.env.VERCEL,
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    return Response.json(
+      {
+        error: 'Lookup failed — check server logs',
+        message: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 },
+    );
+  }
 
   let lookupId: number | undefined;
   try {
@@ -37,7 +57,10 @@ export async function POST(request: Request): Promise<Response> {
       .get();
     lookupId = inserted?.id;
   } catch (err) {
-    console.error('Failed to insert lookup row:', err);
+    // Read-only FS on Vercel rejects writes — expected, not an error
+    if (process.env.VERCEL !== '1') {
+      console.error('Failed to insert lookup row:', err);
+    }
   }
 
   return Response.json({ ...result, lookupId });

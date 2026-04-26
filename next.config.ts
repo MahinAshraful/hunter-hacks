@@ -8,7 +8,11 @@ const nextConfig: NextConfig = {
   // function bundle and every request 500s with ENOENT. We also include
   // the rgb_orders.json that lib/rgb.ts imports at module load.
   outputFileTracingIncludes: {
-    '/api/**/*': ['./data/app.db', './data/seed/rgb_orders.json'],
+    // List each route explicitly — the '/api/**/*' glob form is finicky
+    // across Next versions. Per-route entries always work.
+    '/api/lookup': ['./data/app.db'],
+    '/api/estimate': ['./data/app.db'],
+    '/api/complaint': ['./data/seed/rgb_orders.json'],
   },
   async redirects() {
     return [
