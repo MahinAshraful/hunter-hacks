@@ -664,24 +664,21 @@ export default function InfoStory() {
       />
 
       {/* header */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/80 border-b border-rule">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="relative flex h-7 w-7 items-center justify-center rounded-md bg-ink text-brass-glow font-display font-bold text-base leading-none">
-              ?
-            </span>
-            <span className="font-display text-[17px] sm:text-[19px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep">
-              Am I Rent Stabilized
-            </span>
-            <span className="hidden sm:inline-block ml-1 text-[10px] tracking-[0.18em] uppercase text-muted font-semibold font-mono">
-              .nyc
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/85 border-b border-rule/60">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+          <Link href="/" className="group flex items-baseline -ml-0.5 pr-1">
+            <span className="font-display italic text-[18px] sm:text-[22px] font-medium tracking-tight text-ink-text group-hover:text-brass-deep transition-colors whitespace-nowrap pr-0.5">
+              Am I Rent Stabilized?
             </span>
           </Link>
           <Link
             href="/"
-            className="text-sm text-secondary hover:text-brass-deep inline-flex items-center gap-1"
+            className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-secondary hover:bg-paper-soft hover:text-ink-text transition-colors"
           >
-            ← Home
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M7.5 2.5L4 6l3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Home
           </Link>
         </div>
       </header>

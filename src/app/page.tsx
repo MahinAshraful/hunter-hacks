@@ -195,42 +195,37 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-paper">
       {/* ── Top bar ────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/80 border-b border-rule">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/85 border-b border-rule/60">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <button
             type="button"
             onClick={handleReset}
-            className="flex items-center gap-2.5 group"
+            className="group flex items-baseline -ml-0.5 pr-1"
             aria-label="Home"
           >
-            <span className="relative flex h-7 w-7 items-center justify-center rounded-md bg-ink text-brass-glow font-display font-bold text-base leading-none">
-              ?
-              <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-brass animate-brass-pulse" />
-            </span>
-            <span className="font-display text-[17px] sm:text-[19px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep transition-colors">
-              Am I Rent Stabilized
-            </span>
-            <span className="hidden sm:inline-block ml-1 text-[10px] tracking-[0.18em] uppercase text-muted font-semibold font-mono">
-              .nyc
+            <span className="font-display italic text-[18px] sm:text-[22px] font-medium tracking-tight text-ink-text group-hover:text-brass-deep transition-colors whitespace-nowrap pr-0.5">
+              Am I Rent Stabilized?
             </span>
           </button>
 
-          <nav className="flex items-center gap-1 sm:gap-3 text-sm">
-            <Link href="/info" className="px-3 py-1.5 text-secondary hover:text-brass-deep">Info</Link>
-            <a
-              href="https://hcr.ny.gov/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 text-secondary hover:text-brass-deep hidden sm:inline-flex items-center gap-1"
+          <nav className="flex items-center gap-1">
+            <Link
+              href="/info"
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-secondary hover:bg-paper-soft hover:text-ink-text transition-colors"
             >
-              DHCR <span aria-hidden className="text-[10px]">↗</span>
-            </a>
+              Info
+            </Link>
             {(visibleLookup || estimate || selectedResult) && (
               <button
                 type="button"
                 onClick={handleReset}
-                className="ml-1 rounded-[8px] border border-rule px-3 py-1.5 text-secondary hover:border-brass hover:text-brass-deep text-xs"
+                className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-rule-strong/70 bg-bone px-3.5 py-1.5 text-xs font-semibold text-secondary hover:border-brass hover:bg-brass-wash hover:text-brass-deep transition-all"
+                title="Start over with a new address"
               >
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M2 6a4 4 0 1 1 1.2 2.85" strokeLinecap="round" />
+                  <path d="M2 3v3h3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
                 Reset
               </button>
             )}
