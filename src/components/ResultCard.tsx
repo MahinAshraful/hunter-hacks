@@ -1,136 +1,155 @@
 'use client';
 
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import type { Verdict } from '@/lib/stabilization';
-
-const MapThumbnail = dynamic(() => import('@/components/MapThumbnail'), { ssr: false });
-const MapModal = dynamic(() => import('@/components/MapModal'), { ssr: false });
 
 type Props = {
   verdict: Verdict;
   address: string;
-  lat?: number;
-  lng?: number;
 };
 
 const STATUS_CONFIG = {
   likely_stabilized: {
-    stripColor: 'bg-success',
-    badgeClass: 'bg-success-bg text-success',
-    badgeLabel: 'Likely stabilized',
-    heading: 'This building likely has rent-stabilized units.',
-    subtext: 'The following evidence was found in the NYCDB rentstab dataset.',
+    accent: 'text-verdigris',
+    accentBg: 'bg-verdigris-bg',
+    accentBd: 'border-verdigris-bd',
+    pillBg: 'bg-verdigris',
+    pillText: 'text-bone',
+    badge: 'Likely stabilized',
+    headline: 'This building likely has rent-stabilized units.',
+    sub: 'Evidence found in the NYCDB rentstab dataset and / or the DHCR list.',
   },
   not_listed: {
-    stripColor: 'bg-warning',
-    badgeClass: 'bg-warning-bg text-warning',
-    badgeLabel: 'Not listed',
-    heading: 'No stabilization record found for this building.',
-    subtext:
-      'The building isn’t in the NYCDB rentstab dataset. That doesn’t guarantee it’s unregulated — DHCR records lag by 1–2 years, and some stabilized buildings (e.g. recent 421-a / J-51 properties) may not appear. Cross-check with DHCR before drawing conclusions.',
+    accent: 'text-warning',
+    accentBg: 'bg-warning-bg',
+    accentBd: 'border-warning-bd',
+    pillBg: 'bg-warning',
+    pillText: 'text-bone',
+    badge: 'Not listed',
+    headline: 'No stabilization record found for this building.',
+    sub: 'DHCR records lag by 1–2 years and some stabilized buildings (recent 421-a / J-51) may not appear. Cross-check with DHCR before concluding.',
   },
   unknown: {
-    stripColor: 'bg-muted',
-    badgeClass: 'bg-neutral-bg text-secondary',
-    badgeLabel: 'Unknown',
-    heading: 'We don’t have data on this BBL.',
-    subtext:
-      'Your address resolved, but the BBL isn’t in our local copy of the NYCDB rentstab snapshot. The DHCR Building Search below is the next stop.',
+    accent: 'text-muted',
+    accentBg: 'bg-paper-soft',
+    accentBd: 'border-rule',
+    pillBg: 'bg-slate',
+    pillText: 'text-bone',
+    badge: 'Unknown',
+    headline: 'We don’t have data on this BBL.',
+    sub: 'Your address resolved, but the BBL isn’t in our local NYCDB rentstab snapshot. Verify with DHCR Building Search.',
   },
 } as const;
 
-const linkClass =
-  'inline-flex items-center rounded-lg bg-surface-muted px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-accent-surface hover:text-accent';
-
-export default function ResultCard({ verdict, address, lat, lng }: Props) {
-  const [mapOpen, setMapOpen] = useState(false);
+export default function ResultCard({ verdict, address }: Props) {
   const config = STATUS_CONFIG[verdict.status];
-  const hasCoords = lat !== undefined && lng !== undefined;
+  const [primaryAddr, ...rest] = address.split(',');
+  const tail = rest.join(',').trim();
 
   return (
-    <>
-      <div className="mt-8 rounded-xl border border-border bg-surface shadow-sm overflow-hidden animate-fade-in-up">
-        <div className={`h-1.5 ${config.stripColor}`} />
-        <div className="p-6 md:flex md:gap-6">
-          <div className="flex-1 min-w-0">
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${config.badgeClass}`}>
-              {config.badgeLabel}
-            </span>
-            <h2 className="mt-3 text-lg font-semibold text-primary">{config.heading}</h2>
-            <p className="mt-1 text-sm text-secondary">{address}</p>
-            <p className="mt-1 text-sm text-secondary">{config.subtext}</p>
-
-            {verdict.status !== 'unknown' && (
-              <dl className="mt-4 grid grid-cols-2 gap-y-2 text-sm">
-                {verdict.unit_count_latest !== undefined && (
-                  <>
-                    <dt className="font-medium text-primary">Reported stabilized units</dt>
-                    <dd className="text-secondary">
-                      {verdict.unit_count_latest}
-                      {verdict.unit_count_year ? ` (as of ${verdict.unit_count_year})` : ''}
-                    </dd>
-                  </>
-                )}
-                <dt className="font-medium text-primary">On DHCR list</dt>
-                <dd className="text-secondary">{verdict.on_dhcr_list_latest ? 'Yes' : 'No'}</dd>
-                {verdict.source_year_max !== undefined && (
-                  <>
-                    <dt className="font-medium text-primary">Most recent evidence year</dt>
-                    <dd className="text-secondary">{verdict.source_year_max}</dd>
-                  </>
-                )}
-              </dl>
-            )}
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <a
-                href={verdict.dhcr_verify_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClass}
-              >
-                Verify on DHCR
-              </a>
-              <a
-                href="https://hcr.ny.gov/records-access"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkClass}
-              >
-                Request rent history (REC-1)
-              </a>
+    <section className="paper relative overflow-hidden animate-fade-in-up">
+      {/* Top architectural strip */}
+      <div className={`absolute inset-x-0 top-0 h-[3px] ${config.pillBg}`} />
+      <div className="px-6 sm:px-8 pt-6 pb-7">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="eyebrow">Verdict · Section II</span>
+              <span className="h-px w-8 bg-rule" />
+              <span className="text-[11px] text-muted font-mono">BBL {verdict.bbl}</span>
             </div>
-
-            <p className="mt-4 text-xs text-muted">
-              This tool is for informational purposes only. Data may be out of date (NYCDB rentstab
-              coverage through ~2023). Always verify your apartment&apos;s status directly with DHCR by
-              requesting your rent history.
+            <h2 className="mt-2 font-display text-[28px] sm:text-[32px] leading-[1.05] tracking-tight text-ink-text">
+              <span className={`block first-letter:font-display first-letter:text-[42px] first-letter:font-bold first-letter:float-left first-letter:mr-2 first-letter:leading-[0.85] first-letter:${config.accent}`}>
+                {config.headline}
+              </span>
+            </h2>
+            <p className="mt-2 text-sm text-secondary max-w-xl">{config.sub}</p>
+            <p className="mt-3 font-display italic text-sm text-secondary">
+              <span className="text-ink-text font-medium not-italic">{primaryAddr}</span>
+              {tail && <span className="text-muted">, {tail}</span>}
             </p>
           </div>
-
-          {hasCoords && (
-            <div className="mt-5 md:mt-0 md:w-72 md:flex-shrink-0">
-              <MapThumbnail
-                lat={lat!}
-                lng={lng!}
-                address={address}
-                onClick={() => setMapOpen(true)}
-              />
-            </div>
-          )}
+          <span
+            className={`flex-shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${config.pillBg} ${config.pillText}`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+            {config.badge}
+          </span>
         </div>
-      </div>
 
-      {hasCoords && (
-        <MapModal
-          lat={lat!}
-          lng={lng!}
-          address={address}
-          isOpen={mapOpen}
-          onClose={() => setMapOpen(false)}
-        />
-      )}
-    </>
+        {verdict.status !== 'unknown' && (
+          <>
+            <div className="my-5 rule" />
+            <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
+              {verdict.unit_count_latest !== undefined && (
+                <DataPoint
+                  label="Stabilized units"
+                  value={String(verdict.unit_count_latest)}
+                  hint={verdict.unit_count_year ? `as of ${verdict.unit_count_year}` : undefined}
+                />
+              )}
+              <DataPoint
+                label="On DHCR list"
+                value={verdict.on_dhcr_list_latest ? 'Yes' : 'No'}
+                tone={verdict.on_dhcr_list_latest ? 'verdigris' : 'muted'}
+              />
+              {verdict.source_year_max !== undefined && (
+                <DataPoint label="Most recent evidence" value={String(verdict.source_year_max)} />
+              )}
+            </dl>
+          </>
+        )}
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <a
+            href={verdict.dhcr_verify_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border border-rule bg-bone px-3 py-2 text-sm font-medium text-ink-text hover:border-brass hover:bg-brass-wash hover:text-brass-deep"
+          >
+            Verify on DHCR
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M3 9l6-6M5 3h4v4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
+          <a
+            href="https://hcr.ny.gov/records-access"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border border-rule bg-bone px-3 py-2 text-sm font-medium text-ink-text hover:border-brass hover:bg-brass-wash hover:text-brass-deep"
+          >
+            Request rent history (REC-1)
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M3 9l6-6M5 3h4v4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
+        </div>
+
+        <p className="mt-5 text-[11px] leading-relaxed text-muted">
+          Informational only — NYCDB rentstab coverage runs through ~2023. Always verify your apartment’s status directly with DHCR.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function DataPoint({
+  label,
+  value,
+  hint,
+  tone = 'default',
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: 'default' | 'verdigris' | 'muted';
+}) {
+  const valueClass =
+    tone === 'verdigris' ? 'text-verdigris' : tone === 'muted' ? 'text-muted' : 'text-ink-text';
+  return (
+    <div>
+      <dt className="eyebrow">{label}</dt>
+      <dd className={`mt-1 font-display text-[22px] leading-none tabular ${valueClass}`}>{value}</dd>
+      {hint && <p className="mt-1 text-[11px] text-muted">{hint}</p>}
+    </div>
   );
 }

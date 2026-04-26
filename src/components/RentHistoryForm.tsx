@@ -39,11 +39,10 @@ function isCompleteRow(row: LeaseRow): boolean {
   );
 }
 
-const inputClass =
-  'rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40';
+const inputBase =
+  'w-full rounded-[10px] border border-rule bg-bone px-3 py-2.5 text-sm text-ink-text shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] placeholder:text-muted/70 focus:border-brass focus:outline-none focus:ring-2 focus:ring-brass/25';
 
-const datePickerClass =
-  'w-full rounded-lg border border-border px-3 py-2 text-sm shadow-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40 bg-surface cursor-pointer';
+const datePickerClass = `${inputBase} cursor-pointer`;
 
 export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
   const [rows, setRows] = useState<LeaseRow[]>([{ ...EMPTY_ROW }]);
@@ -74,7 +73,6 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
       setError('Add at least one complete lease (start, end, rent).');
       return;
     }
-
     for (const r of completeRows) {
       if (r.startDate! >= r.endDate!) {
         setError(`Lease starting ${toISO(r.startDate!)} must end after it starts.`);
@@ -109,17 +107,25 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
   const { min: minYear, max: maxYear } = yearRange();
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 space-y-6 rounded-xl border border-border bg-surface p-6 shadow-sm animate-fade-in-up">
+    <form
+      onSubmit={handleSubmit}
+      className="paper px-6 sm:px-8 pt-6 pb-7 animate-fade-in-up space-y-6 relative"
+    >
       <div>
-        <h3 className="text-base font-semibold text-primary">Check your rent</h3>
-        <p className="mt-1 text-sm text-secondary">
-          Enter every lease you&apos;ve signed at this apartment. We&apos;ll compare each renewal to the
-          legal RGB increase for that year.
+        <span className="eyebrow">Section III · Lease history</span>
+        <h3 className="mt-1.5 font-display text-2xl tracking-tight text-ink-text">
+          Compare each renewal against the legal RGB increase.
+        </h3>
+        <p className="mt-1.5 text-sm text-secondary max-w-xl">
+          Enter every lease you’ve signed at this apartment. We’ll walk it forward year-by-year against
+          NYC Rent Guidelines Board orders and surface any year where rent rose above the legal cap.
         </p>
       </div>
 
+      <div className="rule" />
+
       <div className="space-y-3">
-        <div className="grid grid-cols-12 gap-2 text-xs font-medium uppercase tracking-wide text-secondary">
+        <div className="hidden sm:grid grid-cols-12 gap-2 px-1 eyebrow">
           <span className="col-span-3">Lease start</span>
           <span className="col-span-3">Lease end</span>
           <span className="col-span-3">Monthly rent</span>
@@ -127,8 +133,11 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
           <span className="col-span-1" />
         </div>
         {rows.map((row, i) => (
-          <div key={i} className="grid grid-cols-12 gap-2">
-            <div className="col-span-3">
+          <div
+            key={i}
+            className="grid grid-cols-12 gap-2 items-start rounded-[10px] sm:bg-transparent bg-paper-soft sm:p-0 p-3"
+          >
+            <div className="col-span-12 sm:col-span-3">
               <DatePicker
                 selected={row.startDate}
                 onChange={(date: Date | null) => updateRow(i, { startDate: date })}
@@ -140,10 +149,11 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 minDate={new Date(minYear, 0, 1)}
                 maxDate={new Date(maxYear, 11, 31)}
                 className={datePickerClass}
+                wrapperClassName="w-full"
                 required
               />
             </div>
-            <div className="col-span-3">
+            <div className="col-span-12 sm:col-span-3">
               <DatePicker
                 selected={row.endDate}
                 onChange={(date: Date | null) => updateRow(i, { endDate: date })}
@@ -155,11 +165,12 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 minDate={row.startDate ?? new Date(minYear, 0, 1)}
                 maxDate={new Date(maxYear, 11, 31)}
                 className={datePickerClass}
+                wrapperClassName="w-full"
                 required
               />
             </div>
-            <div className="relative col-span-3">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">$</span>
+            <div className="relative col-span-7 sm:col-span-3">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted font-mono text-sm">$</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -167,56 +178,70 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 step="0.01"
                 value={row.monthlyRent}
                 onChange={(e) => updateRow(i, { monthlyRent: e.target.value })}
-                placeholder="2000.00"
-                className={`w-full pl-6 ${inputClass}`}
+                placeholder="2,000.00"
+                className={`pl-6 ${inputBase} font-mono`}
                 required
               />
             </div>
             <select
               value={row.leaseTermMonths}
               onChange={(e) => updateRow(i, { leaseTermMonths: Number(e.target.value) as 12 | 24 })}
-              className={`col-span-2 ${inputClass}`}
+              className={`col-span-3 sm:col-span-2 ${inputBase}`}
             >
-              <option value={12}>1 year</option>
-              <option value={24}>2 years</option>
+              <option value={12}>1-year</option>
+              <option value={24}>2-year</option>
             </select>
             <button
               type="button"
               onClick={() => removeRow(i)}
               disabled={rows.length === 1}
-              className="col-span-1 rounded-lg border border-border text-sm text-muted hover:bg-surface-muted hover:text-danger hover:border-danger disabled:cursor-not-allowed disabled:opacity-40"
+              className="col-span-2 sm:col-span-1 h-[42px] rounded-[10px] border border-rule text-secondary hover:bg-rust-bg hover:text-rust hover:border-rust-bd disabled:cursor-not-allowed disabled:opacity-30"
               aria-label="Remove lease"
+              title="Remove"
             >
-              &times;
+              <svg className="mx-auto h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M3 5h10M6 5V3.5A.5.5 0 0 1 6.5 3h3a.5.5 0 0 1 .5.5V5M5 5l.7 8.5a.5.5 0 0 0 .5.5h3.6a.5.5 0 0 0 .5-.5L11 5" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
         ))}
         <button
           type="button"
           onClick={addRow}
-          className="text-sm font-medium text-accent hover:text-accent-hover"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-brass-deep hover:text-brass"
         >
-          + Add another lease
+          <span className="text-base leading-none">+</span> Add another lease
         </button>
       </div>
 
-      <div className="border-t border-border pt-4">
-        <label className="flex cursor-pointer items-start gap-2">
+      <div className="rule" />
+
+      <div>
+        <label className="flex cursor-pointer items-start gap-3 group">
+          <span className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-[5px] border ${
+            includeBase ? 'border-brass bg-brass' : 'border-rule-strong bg-bone'
+          } transition-colors`}>
+            {includeBase && (
+              <svg viewBox="0 0 12 12" className="h-3 w-3 text-[#1a1305]" fill="none" stroke="currentColor" strokeWidth="2.4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2 6.5l2.5 2.5L10 3.5" />
+              </svg>
+            )}
+          </span>
           <input
             type="checkbox"
             checked={includeBase}
             onChange={(e) => setIncludeBase(e.target.checked)}
-            className="mt-1 accent-accent"
+            className="sr-only"
           />
-          <span className="text-sm text-secondary">
-            <span className="font-medium text-primary">I have a registered base rent</span> from a DHCR rent
-            history (Records Access, Form REC-1). Adding this gives a more reliable estimate.
+          <span className="text-sm text-secondary leading-relaxed">
+            <span className="font-semibold text-ink-text">I have a registered base rent</span>{' '}
+            from a DHCR rent history (Records Access, Form REC-1). Anchoring on a registered base produces a more reliable estimate.
           </span>
         </label>
         {includeBase && (
-          <div className="mt-3 grid grid-cols-12 gap-2">
-            <div className="relative col-span-4">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">$</span>
+          <div className="mt-3 grid grid-cols-12 gap-2 animate-fade-in-up">
+            <div className="relative col-span-12 sm:col-span-4">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted font-mono">$</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -225,10 +250,10 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 value={baseAmount}
                 onChange={(e) => setBaseAmount(e.target.value)}
                 placeholder="Registered rent"
-                className={`w-full pl-6 ${inputClass}`}
+                className={`pl-6 font-mono ${inputBase}`}
               />
             </div>
-            <div className="col-span-4">
+            <div className="col-span-12 sm:col-span-4">
               <DatePicker
                 selected={baseAsOf}
                 onChange={(date: Date | null) => setBaseAsOf(date)}
@@ -240,13 +265,14 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 minDate={new Date(minYear, 0, 1)}
                 maxDate={new Date()}
                 className={datePickerClass}
+                wrapperClassName="w-full"
                 aria-label="As of date"
               />
             </div>
             <select
               value={baseTerm}
               onChange={(e) => setBaseTerm(Number(e.target.value) as 12 | 24)}
-              className={`col-span-4 ${inputClass}`}
+              className={`col-span-12 sm:col-span-4 ${inputBase}`}
             >
               <option value={12}>1-year base lease</option>
               <option value={24}>2-year base lease</option>
@@ -256,17 +282,32 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-danger-border bg-danger-bg p-3">
-          <p className="text-sm text-danger">{error}</p>
+        <div className="rounded-[10px] border border-rust-bd bg-rust-bg px-4 py-3">
+          <p className="text-sm text-rust">{error}</p>
         </div>
       )}
 
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent/40 focus:ring-offset-2 disabled:opacity-50"
+        className="btn-brass w-full px-5 py-3.5 text-sm tracking-wide flex items-center justify-center gap-2 disabled:cursor-not-allowed"
       >
-        {isSubmitting ? 'Calculating…' : 'Estimate overcharge'}
+        {isSubmitting ? (
+          <>
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Calculating…
+          </>
+        ) : (
+          <>
+            Estimate overcharge
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 7h8m0 0L7 3m4 4L7 11" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </>
+        )}
       </button>
     </form>
   );
