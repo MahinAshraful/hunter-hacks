@@ -1,8 +1,13 @@
 import { z } from 'zod';
-import { buildFieldMap, streamComplaint, type ComplaintInput } from '@/lib/complaint';
+import {
+  buildFieldMap,
+  streamComplaint,
+  activeProviderName,
+  type ComplaintInput,
+} from '@/lib/complaint';
 
 export const runtime = 'nodejs';
-// Streaming the full RA-89 draft can take 30-40s on a long lease history.
+// Streaming the full RA-89 attachment can take 30-40s on a long lease history.
 // Default Hobby cap is 10s; bump to 60 (Hobby max) so streams aren't cut.
 export const maxDuration = 60;
 
@@ -43,25 +48,80 @@ const EstimateSchema = z.object({
   caveats: z.array(z.string().max(500)).max(20),
 });
 
+const TenantTypeSchema = z.enum(['prime', 'sub', 'hotel', 'roommate']);
+const Section8Schema = z.enum(['none', 'hud', 'nycha', 'hcv', 'hpd']);
+const ToneSchema = z.enum(['neutral', 'assertive', 'conciliatory']);
+const CauseSchema = z.enum([
+  'mci',
+  'iai',
+  'rent_reduction_order',
+  'missing_registrations',
+  'fmra',
+  'parking',
+  'illegal_fees',
+  'security_deposit',
+  'other',
+]);
+
+const SHORT_TEXT = z.string().max(200);
+const ISO_DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
 const RequestSchema = z.object({
   verdict: VerdictSchema,
   estimate: EstimateSchema,
   address: z.string().min(1).max(300),
-  tenantName: z.string().max(200).optional(),
+
+  tenantName: SHORT_TEXT.optional(),
   unit: z.string().max(50).optional(),
+  mailingAddress: z.string().max(300).optional(),
+  mailingCity: SHORT_TEXT.optional(),
+  mailingState: z.string().max(20).optional(),
+  mailingZip: z.string().max(20).optional(),
+
+  tenantPhoneHome: z.string().max(40).optional(),
+  tenantPhoneDay: z.string().max(40).optional(),
+
+  tenantType: TenantTypeSchema.optional(),
+  scrieDrie: z.boolean().optional(),
+  section8: Section8Schema.optional(),
+  coop: z.boolean().optional(),
+
+  moveInDate: ISO_DATE.optional(),
+  initialRent: z.number().min(0).max(1_000_000).optional(),
+
+  electricityIncluded: z.boolean().optional(),
+
+  ownerName: z.string().max(300).optional(),
+  ownerAddress: z.string().max(500).optional(),
+  ownerPhone: z.string().max(40).optional(),
+
+  causes: z.array(CauseSchema).max(9).optional(),
+
+  securityDepositAmount: z.number().min(0).max(1_000_000).optional(),
+  securityDepositPaidOn: ISO_DATE.optional(),
+
+  raisedInCourt: z.boolean().optional(),
+  courtIndexNo: z.string().max(80).optional(),
+
+  tone: ToneSchema.optional(),
 });
 
 /**
  * Streams NDJSON. Each line is a JSON object:
- *   { "type": "fields", "data": { ... } }       — emitted once, first
- *   { "type": "text",   "data": "..." }         — repeated for each delta
- *   { "type": "done" }                          — final event
- *   { "type": "error",  "data": "message" }     — on failure
+ *   { "type": "fields",   "data": { ... } }       — emitted once, first
+ *   { "type": "provider", "data": "openai"|... }  — which model is being used
+ *   { "type": "text",     "data": "..." }         — repeated for each delta
+ *   { "type": "done" }                            — final event
+ *   { "type": "error",    "data": "message" }     — on failure
  */
 export async function POST(request: Request): Promise<Response> {
-  if (!process.env.ANTHROPIC_API_KEY) {
+  const provider = activeProviderName();
+  if (!provider) {
     return Response.json(
-      { error: 'ANTHROPIC_API_KEY is not configured on the server.' },
+      {
+        error:
+          'No LLM provider configured. Set OPENAI_API_KEY (preferred) or ANTHROPIC_API_KEY in .env.local.',
+      },
       { status: 503 },
     );
   }
@@ -91,6 +151,7 @@ export async function POST(request: Request): Promise<Response> {
         controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
       };
 
+      send({ type: 'provider', data: provider });
       send({ type: 'fields', data: fields });
 
       try {
@@ -99,13 +160,8 @@ export async function POST(request: Request): Promise<Response> {
         }
         send({ type: 'done' });
       } catch (err) {
-        // Log the real error server-side; return a generic message to the
-        // client so we don't leak vendor request IDs or stack frames.
         console.error('Complaint stream failed:', err);
-        if (request.signal.aborted) {
-          // Client disconnected — no point queuing more bytes.
-          return;
-        }
+        if (request.signal.aborted) return;
         send({
           type: 'error',
           data: 'The drafting service failed. Please try again.',
