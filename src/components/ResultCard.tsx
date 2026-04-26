@@ -29,14 +29,14 @@ const STATUS_CONFIG = {
     sub: 'DHCR records lag by 1–2 years and some stabilized buildings (recent 421-a / J-51) may not appear. Cross-check with DHCR before concluding.',
   },
   unknown: {
-    accent: 'text-muted',
-    accentBg: 'bg-paper-soft',
-    accentBd: 'border-rule',
-    pillBg: 'bg-slate',
+    accent: 'text-warning',
+    accentBg: 'bg-warning-bg',
+    accentBd: 'border-warning-bd',
+    pillBg: 'bg-warning',
     pillText: 'text-bone',
-    badge: 'Unknown',
-    headline: 'We don’t have data on this BBL.',
-    sub: 'Your address resolved, but the BBL isn’t in our local NYCDB rentstab snapshot. Verify with DHCR Building Search.',
+    badge: 'Likely not stabilized',
+    headline: 'This building is probably not rent-stabilized.',
+    sub: 'We didn’t find your address on the DHCR list or in the NYCDB rent-stabilization dataset. Buildings outside these records are usually condos, co-ops, single/two-family homes, or post-1974 construction — none of which are typically rent-stabilized. To be 100% sure, verify directly with DHCR.',
   },
 } as const;
 
