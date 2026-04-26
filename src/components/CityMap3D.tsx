@@ -121,6 +121,118 @@ function distSq(a: LngLat, b: LngLat): number {
   return dx * dx + dy * dy;
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Polygon buffer (offset outward by N meters)
+//
+// Why: when we render the brass highlight as a fill-extrusion, its walls
+// sit at the BIN footprint. The OMT base extrusion's walls sit at OSM's
+// (slightly different) footprint. Where the two coincide or overlap,
+// WebGL z-fights — the symptoms are exactly what we saw: random patches
+// where neither wins, sometimes top, sometimes bottom, sometimes nothing.
+// Buffering the brass polygon outward by ~0.8m makes its walls lie
+// strictly outside the OMT walls, eliminating the conflict entirely.
+//
+// Algorithm: bisector-normal offset with a miter limit. For each vertex,
+// take the unit outward normals of its two adjacent edges, sum them to
+// form a bisector, and move the vertex along the bisector by
+// `offset / cos(half-angle)`. Sharp corners get clamped (miter limit) to
+// avoid spikes.
+// ──────────────────────────────────────────────────────────────────────
+
+const M_PER_DEG_LAT = 111_000;
+
+function bufferRing(ring: LngLat[], offsetMeters: number): LngLat[] {
+  if (ring.length < 4) return ring;
+
+  const closed =
+    ring[0][0] === ring[ring.length - 1][0] && ring[0][1] === ring[ring.length - 1][1];
+  const open = closed ? ring.slice(0, -1) : ring;
+  const n = open.length;
+  if (n < 3) return ring;
+
+  const centerLat = open.reduce((s, p) => s + p[1], 0) / n;
+  const lngScale = Math.cos((centerLat * Math.PI) / 180);
+  const M_LNG = M_PER_DEG_LAT * lngScale;
+
+  // Project to local meter coords for the offset math
+  const xy: [number, number][] = open.map((p) => [p[0] * M_LNG, p[1] * M_PER_DEG_LAT]);
+
+  // Determine winding via signed shoelace
+  let signedArea = 0;
+  for (let i = 0; i < n; i++) {
+    const a = xy[i];
+    const b = xy[(i + 1) % n];
+    signedArea += a[0] * b[1] - b[0] * a[1];
+  }
+  // signedArea > 0 = CCW (standard math convention with y pointing up).
+  // GeoJSON RFC 7946 specifies outer rings CCW, holes CW. The CALLER
+  // negates `offsetMeters` for inner rings so this routine can treat
+  // every ring as if it should expand outward.
+  const sign = signedArea >= 0 ? 1 : -1;
+
+  const out: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const prev = xy[(i - 1 + n) % n];
+    const cur = xy[i];
+    const next = xy[(i + 1) % n];
+
+    const e1x = cur[0] - prev[0], e1y = cur[1] - prev[1];
+    const e2x = next[0] - cur[0], e2y = next[1] - cur[1];
+
+    // Outward normal for CCW: (dy, -dx). Flip via `sign` if the ring is CW.
+    const n1x = e1y * sign, n1y = -e1x * sign;
+    const n2x = e2y * sign, n2y = -e2x * sign;
+
+    const l1 = Math.hypot(n1x, n1y) || 1;
+    const l2 = Math.hypot(n2x, n2y) || 1;
+    const u1x = n1x / l1, u1y = n1y / l1;
+    const u2x = n2x / l2, u2y = n2y / l2;
+
+    const bx = u1x + u2x;
+    const by = u1y + u2y;
+    const lb = Math.hypot(bx, by);
+
+    if (lb < 1e-9) {
+      // Reflex / 180° turn — fall back to one normal
+      out.push([cur[0] + u1x * offsetMeters, cur[1] + u1y * offsetMeters]);
+      continue;
+    }
+    const bxn = bx / lb, byn = by / lb;
+    const cosHalf = u1x * bxn + u1y * byn;
+    // Miter limit: cap at 4× to avoid huge spikes at acute corners
+    const miter = Math.min(offsetMeters / Math.max(cosHalf, 0.25), Math.abs(offsetMeters) * 4);
+    out.push([cur[0] + bxn * miter, cur[1] + byn * miter]);
+  }
+
+  // Convert back to lng/lat and re-close
+  const result: LngLat[] = out.map((p) => [p[0] / M_LNG, p[1] / M_PER_DEG_LAT]);
+  result.push(result[0]);
+  return result;
+}
+
+function bufferPolygonCoords(poly: LngLat[][], offsetMeters: number): LngLat[][] {
+  return poly.map((ring, i) => bufferRing(ring, i === 0 ? offsetMeters : -offsetMeters));
+}
+
+function bufferGeometry(g: GeoJSON.Geometry, offsetMeters: number): GeoJSON.Geometry {
+  if (!g) return g;
+  if (g.type === 'Polygon') {
+    return {
+      type: 'Polygon',
+      coordinates: bufferPolygonCoords(g.coordinates as LngLat[][], offsetMeters) as never,
+    };
+  }
+  if (g.type === 'MultiPolygon') {
+    return {
+      type: 'MultiPolygon',
+      coordinates: (g.coordinates as LngLat[][][]).map((p) =>
+        bufferPolygonCoords(p, offsetMeters),
+      ) as never,
+    };
+  }
+  return g;
+}
+
 // Combine all rendered tile features that reference the same building
 // into one geometry. For OpenMapTiles' building layer this isn't perfect
 // but is a reasonable union for visual purposes.
@@ -543,28 +655,28 @@ function attachBuildingLayers(map: MLMap) {
     );
   }
 
-  // Custom GeoJSON source for the ONE highlighted building.
-  // Authoritative — we drop the real polygon (from BIN footprint or
-  // queried tile geometry) into here, so we don't depend on tile IDs.
+  // Two sources: one for the brass volume (polygon inflated +0.8m),
+  // one for the ground halo (polygon inflated +6m so it visibly spills
+  // out around the base of the building).
   if (!map.getSource('ledger-target')) {
-    map.addSource('ledger-target', {
-      type: 'geojson',
-      data: EMPTY_FC,
-    });
+    map.addSource('ledger-target', { type: 'geojson', data: EMPTY_FC });
+  }
+  if (!map.getSource('ledger-target-halo')) {
+    map.addSource('ledger-target-halo', { type: 'geojson', data: EMPTY_FC });
   }
 
-  // Ground halo (creamy fill that bleeds outside the footprint slightly
-  // thanks to the outline color — sells the "spotlight on the ground" look)
+  // Ground halo — sits underneath the OMT extrusions so the brass
+  // building can rise out of a creamy spotlight on the pavement.
   if (!map.getLayer('ledger-target-fill')) {
     map.addLayer(
       {
         id: 'ledger-target-fill',
-        source: 'ledger-target',
+        source: 'ledger-target-halo',
         type: 'fill',
         minzoom: 13,
         paint: {
           'fill-color': HIGHLIGHT_FOOTPRINT,
-          'fill-opacity': 0.7,
+          'fill-opacity': 0.55,
           'fill-outline-color': HIGHLIGHT_FILL_DEEP,
         },
       },
@@ -573,7 +685,11 @@ function attachBuildingLayers(map: MLMap) {
   }
 
   // The highlighted building extruded in brass. Sits ABOVE the base
-  // 3D buildings so it visually replaces the stock-colored extrusion.
+  // 3D buildings and is BOTH taller (+8m absolute) AND wider (~0.8m
+  // outward buffer applied at apply-time) than the OMT building, so it
+  // FULLY ENCLOSES the OMT volume. Without this, coplanar walls + roofs
+  // z-fight against the OMT extrusion and you get random patches of
+  // sandstone bleeding through.
   if (!map.getLayer('ledger-target-extrusion')) {
     map.addLayer(
       {
@@ -584,17 +700,18 @@ function attachBuildingLayers(map: MLMap) {
         paint: {
           'fill-extrusion-color': HIGHLIGHT_FILL,
           'fill-extrusion-height': [
-            '*', 1.06,
+            '+',
+            8, // always 8m taller than the underlying OMT/heightroof
             [
               'coalesce',
-              ['get', '_render_height'],                    // sampled from OMT under the polygon
-              ['get', 'render_height'],                     // OMT-native fallback
-              ['*', 0.3048, ['to-number', ['get', 'heightroof'], 0]], // NYC OpenData heightroof (feet → meters)
-              16,                                            // last-resort default
+              ['get', '_render_height'],
+              ['get', 'render_height'],
+              ['*', 0.3048, ['to-number', ['get', 'heightroof'], 0]],
+              16,
             ],
           ],
-          'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-          'fill-extrusion-opacity': 0.98,
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': 1,
           'fill-extrusion-vertical-gradient': false,
         },
       },
@@ -711,18 +828,33 @@ function enrichHeightFromTiles(m: MLMap, feature: GeoJSON.Feature): GeoJSON.Feat
 }
 
 function applyHighlight(m: MLMap, feature: GeoJSON.Feature | null) {
-  const src = m.getSource('ledger-target') as maplibregl.GeoJSONSource | undefined;
-  if (!src) return;
+  const brass = m.getSource('ledger-target') as maplibregl.GeoJSONSource | undefined;
+  const halo = m.getSource('ledger-target-halo') as maplibregl.GeoJSONSource | undefined;
+  if (!brass || !halo) return;
   if (!feature) {
-    src.setData(EMPTY_FC);
+    brass.setData(EMPTY_FC);
+    halo.setData(EMPTY_FC);
     return;
   }
-  src.setData({ type: 'FeatureCollection', features: [feature] });
+  // Inflate the polygon by 0.8m for the brass building so its walls sit
+  // clearly outside the OMT walls (eliminates z-fighting).
+  const brassFeature: GeoJSON.Feature = {
+    ...feature,
+    geometry: bufferGeometry(feature.geometry, 0.8),
+  };
+  // Inflate by 6m for the ground halo so it spills visibly out from the
+  // base of the brass building like a spotlight on the pavement.
+  const haloFeature: GeoJSON.Feature = {
+    ...feature,
+    geometry: bufferGeometry(feature.geometry, 6),
+  };
+  brass.setData({ type: 'FeatureCollection', features: [brassFeature] });
+  halo.setData({ type: 'FeatureCollection', features: [haloFeature] });
 }
 
 function clearHighlight(m: MLMap) {
-  const src = m.getSource('ledger-target') as maplibregl.GeoJSONSource | undefined;
-  src?.setData(EMPTY_FC);
+  (m.getSource('ledger-target') as maplibregl.GeoJSONSource | undefined)?.setData(EMPTY_FC);
+  (m.getSource('ledger-target-halo') as maplibregl.GeoJSONSource | undefined)?.setData(EMPTY_FC);
 }
 
 // ──────────────────────────────────────────────────────────────────────
