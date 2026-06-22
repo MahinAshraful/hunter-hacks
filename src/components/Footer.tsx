@@ -15,6 +15,8 @@ export default function Footer() {
               overcharge using NYC Rent Guidelines Board increases. It does not model MCI/IAI
               adjustments, vacancy allowances, or any case-specific facts. <span className="font-semibold text-ink-text">Not legal advice.</span>{' '}
               Always verify directly with DHCR and consider speaking with a tenant attorney before filing.
+              This is not a law firm and use of this tool does not create an attorney-client
+              relationship. Not affiliated with or endorsed by DHCR or any NY state agency.
             </p>
           </div>
 

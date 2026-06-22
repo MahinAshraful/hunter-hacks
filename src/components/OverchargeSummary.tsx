@@ -152,7 +152,8 @@ export default function OverchargeSummary({ estimate }: Props) {
           >
             DHCR Records Access (Form REC-1)
           </a>
-          .
+          . This is not a law firm and use of this tool does not create an attorney-client
+          relationship. Not affiliated with or endorsed by DHCR or any NY state agency.
         </p>
       </div>
     </section>

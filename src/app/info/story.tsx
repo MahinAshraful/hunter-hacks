@@ -882,6 +882,10 @@ export default function InfoStory() {
             kicker="Not exhaustive"
             body="NYCDB coverage runs through roughly 2023; newly-stabilized or de-regulated buildings may show stale information. Cross-check on the DHCR Building Search."
           />
+          <Caveat
+            kicker="Not a law firm"
+            body="This is not a law firm and use of this tool does not create an attorney-client relationship. Not affiliated with or endorsed by DHCR or any NY state agency."
+          />
         </div>
       </section>
 

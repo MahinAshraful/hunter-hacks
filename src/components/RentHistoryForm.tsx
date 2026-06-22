@@ -7,6 +7,7 @@ import type { LeaseEntry, BaseRent } from '@/lib/overcharge';
 type LeaseRow = {
   startDate: Date | null;
   endDate: Date | null;
+  endDateManual: boolean;
   monthlyRent: string;
   leaseTermMonths: 12 | 24;
 };
@@ -19,6 +20,7 @@ type Props = {
 const EMPTY_ROW: LeaseRow = {
   startDate: null,
   endDate: null,
+  endDateManual: false,
   monthlyRent: '',
   leaseTermMonths: 12,
 };
@@ -28,6 +30,12 @@ function toISO(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+function addMonths(d: Date, months: number): Date {
+  const out = new Date(d);
+  out.setMonth(out.getMonth() + months);
+  return out;
 }
 
 function isCompleteRow(row: LeaseRow): boolean {
@@ -53,7 +61,15 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   function updateRow(i: number, patch: Partial<LeaseRow>) {
-    setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+    setRows((prev) => prev.map((r, idx) => {
+      if (idx !== i) return r;
+      const next = { ...r, ...patch };
+      // Auto-fill end date when start or term changes, unless user set it manually
+      if (!next.endDateManual && next.startDate && ('startDate' in patch || 'leaseTermMonths' in patch)) {
+        next.endDate = addMonths(next.startDate, next.leaseTermMonths);
+      }
+      return next;
+    }));
   }
 
   function addRow() {
@@ -156,9 +172,9 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
             <div className="col-span-12 sm:col-span-3">
               <DatePicker
                 selected={row.endDate}
-                onChange={(date: Date | null) => updateRow(i, { endDate: date })}
+                onChange={(date: Date | null) => updateRow(i, { endDate: date, endDateManual: true })}
                 dateFormat="MM/dd/yyyy"
-                placeholderText="End date"
+                placeholderText="End date (auto-filled)"
                 showMonthDropdown
                 showYearDropdown
                 dropdownMode="select"

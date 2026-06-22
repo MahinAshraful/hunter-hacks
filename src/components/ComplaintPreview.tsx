@@ -108,6 +108,8 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [ra89Filling, setRa89Filling] = useState(false);
+  const [ra89Error, setRa89Error] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -286,8 +288,9 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
-        const errorBody = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(errorBody.error ?? `Request failed with status ${res.status}`);
+        const errorBody = (await res.json().catch(() => ({}))) as { error?: string; details?: unknown };
+        const detail = errorBody.details ? ` — ${JSON.stringify(errorBody.details)}` : '';
+        throw new Error((errorBody.error ?? `Request failed with status ${res.status}`) + detail);
       }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -366,6 +369,49 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
   function handleMailto() {
     const { subject, body } = buildEmail();
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+
+  async function handleRa89Download() {
+    if (!text) return;
+    setRa89Filling(true);
+    setRa89Error(null);
+    try {
+      const { fillRa89Form, downloadRa89 } = await import('@/lib/ra89-fill');
+
+      // Extract block B (§14 narrative) from the AI draft
+      const narrativeMatch = text.match(/═{3,}[^═]*B\.[^═]*═{3,}([\s\S]*?)(?:═{3,}|$)/);
+      const narrative = narrativeMatch ? narrativeMatch[1].trim() : '';
+
+      const bytes = await fillRa89Form({
+        tenantName: form.tenantName.trim() || undefined,
+        unit: form.unit.trim() || undefined,
+        mailingAddress: form.mailingSameAsBuilding ? undefined : form.mailingAddress.trim() || undefined,
+        mailingCity: form.mailingSameAsBuilding ? undefined : form.mailingCity.trim() || undefined,
+        mailingState: form.mailingSameAsBuilding ? undefined : form.mailingState.trim() || undefined,
+        mailingZip: form.mailingSameAsBuilding ? undefined : form.mailingZip.trim() || undefined,
+        address,
+        phoneHome: form.phoneHome.trim() || undefined,
+        phoneDay: form.phoneDay.trim() || undefined,
+        tenantType: form.tenantType,
+        scrieDrie: form.scrieDrie,
+        section8: form.section8 !== 'none' ? form.section8 : undefined,
+        coop: form.coop,
+        electricityIncluded: form.electricityIncluded,
+        ownerName: form.ownerName.trim() || undefined,
+        ownerAddress: form.ownerAddress.trim() || undefined,
+        ownerPhone: form.ownerPhone.trim() || undefined,
+        causes: form.causes,
+        raisedInCourt: form.raisedInCourt,
+        courtIndexNo: form.courtIndexNo.trim() || undefined,
+        estimate,
+        narrative,
+      });
+      downloadRa89(bytes, verdict.bbl);
+    } catch (err) {
+      setRa89Error(err instanceof Error ? err.message : 'Failed to generate RA-89');
+    } finally {
+      setRa89Filling(false);
+    }
   }
 
   function handlePrint() {
@@ -581,8 +627,12 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
           <>
             {/* Action bar — compact, all 5 actions in one row */}
             <div className="mt-6 flex flex-wrap items-center gap-2 pb-4 border-b border-rule">
-              <button type="button" onClick={handleDownload} className="btn-brass px-4 py-2 text-sm flex items-center gap-1.5">
-                <IconDownload /> Download PDF
+              <button type="button" onClick={handleRa89Download} disabled={ra89Filling} className="btn-brass px-4 py-2 text-sm flex items-center gap-1.5 disabled:opacity-60">
+                {ra89Filling ? <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <IconDownload />}
+                {ra89Filling ? 'Filling form…' : 'Download RA-89 (filled)'}
+              </button>
+              <button type="button" onClick={handleDownload} className="btn-ghost px-4 py-2 text-sm flex items-center gap-1.5">
+                <IconDownload /> Companion doc
               </button>
               <button type="button" onClick={handleGmail} className="btn-ghost px-3 py-2 text-sm flex items-center gap-1.5">
                 <IconGmail /> Send via Gmail
@@ -606,6 +656,12 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                 </button>
               </div>
             </div>
+
+            {ra89Error && (
+              <div className="mt-2 rounded-[8px] border border-rust-bd bg-rust-bg px-3 py-2">
+                <p className="text-xs text-rust">{ra89Error}</p>
+              </div>
+            )}
 
             {/* Email helper note */}
             <p className="mt-2 text-[11px] text-muted leading-relaxed">
@@ -729,6 +785,8 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
             <div className="mt-4 rounded-[10px] border border-warning-bd bg-warning-bg/70 px-3 py-2">
               <p className="text-[11px] text-warning leading-relaxed">
                 <span className="font-semibold">Not legal advice.</span> Review every line before filing and consider speaking with a tenant attorney.
+                This is not a law firm and use of this tool does not create an attorney-client
+                relationship. Not affiliated with or endorsed by DHCR or any NY state agency.
               </p>
             </div>
           </>

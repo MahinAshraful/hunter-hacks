@@ -68,4 +68,7 @@ Set `ANTHROPIC_API_KEY` in the Vercel project's environment variables.
 
 Not legal advice. Estimates only. The tool does not model MCI/IAI
 adjustments, vacancy allowances, or fraud claims. Always verify with
-DHCR and consider speaking with a tenant attorney before filing.
+DHCR and consider speaking with a tenant attorney before filing. This is
+not a law firm and use of this tool does not create an attorney-client
+relationship. Not affiliated with or endorsed by DHCR or any NY state
+agency.
