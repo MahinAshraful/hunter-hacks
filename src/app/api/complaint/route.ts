@@ -134,6 +134,8 @@ const RequestSchema = z.object({
 
   moveInDate: ISO_DATE.optional(),
   initialRent: z.number().min(0).max(1_000_000).optional(),
+  noWrittenLease: z.boolean().optional(),
+  initialRentNoLease: z.number().min(0).max(1_000_000).optional(),
 
   electricityIncluded: z.boolean().optional(),
 

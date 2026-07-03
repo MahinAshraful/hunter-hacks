@@ -68,6 +68,8 @@ export type ComplaintInput = {
   // §8 — move-in
   moveInDate?: string;
   initialRent?: number;
+  noWrittenLease?: boolean;
+  initialRentNoLease?: number;
 
   // §10 — utilities
   electricityIncluded?: boolean;
@@ -190,8 +192,11 @@ function buildUserMessage(input: ComplaintInput, fields: FieldMap): string {
   const baseline = input.estimate.baseline_lease;
 
   const moveInDate = input.moveInDate ?? baseline?.lease_start ?? null;
-  const initialRent = input.initialRent ?? baseline?.monthly_rent ?? null;
-  const initialTermYears = baseline ? (baseline.term_months === 24 ? 2 : 1) : null;
+  const hadWrittenLease = !input.noWrittenLease;
+  const initialRent = input.noWrittenLease
+    ? input.initialRentNoLease ?? null
+    : input.initialRent ?? baseline?.monthly_rent ?? null;
+  const initialTermYears = hadWrittenLease && baseline ? (baseline.term_months === 24 ? 2 : 1) : null;
 
   // Security deposit: if the tenant didn't tell us, presume one month's rent
   // (the legal cap under NY GOL §7-108 since 2019). Marked "presumed" so the
@@ -232,6 +237,7 @@ function buildUserMessage(input: ComplaintInput, fields: FieldMap): string {
       date: moveInDate,
       initial_rent: initialRent,
       lease_term_years: initialTermYears,
+      had_written_lease: hadWrittenLease,
       derived: input.moveInDate === undefined && baseline !== null,
     },
     electricity_included: input.electricityIncluded ?? null,

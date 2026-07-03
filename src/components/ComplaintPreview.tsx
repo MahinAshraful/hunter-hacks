@@ -81,6 +81,8 @@ type FormState = {
   scrieDrie: boolean;
   section8: Section8Program;
   coop: boolean;
+  noWrittenLease: boolean;
+  initialRentNoLease: string;
   electricityIncluded: boolean | null;
   ownerName: string;
   ownerAddress: string;
@@ -118,6 +120,8 @@ const EMPTY_FORM: FormState = {
   scrieDrie: false,
   section8: 'none',
   coop: false,
+  noWrittenLease: false,
+  initialRentNoLease: '',
   electricityIncluded: null,
   ownerName: '',
   ownerAddress: '',
@@ -342,6 +346,10 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
     scrieDrie: form.scrieDrie || undefined,
     section8: form.section8 !== 'none' ? form.section8 : undefined,
     coop: form.coop || undefined,
+    noWrittenLease: form.noWrittenLease || undefined,
+    initialRentNoLease: form.noWrittenLease
+      ? Number.parseFloat(form.initialRentNoLease) || undefined
+      : undefined,
     electricityIncluded: form.electricityIncluded ?? undefined,
     ownerName: form.ownerName.trim() || undefined,
     ownerAddress: form.ownerAddress.trim() || undefined,
@@ -360,6 +368,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
     if (!form.tenantName.trim()) out.push('your name');
     if (!form.phoneDay.trim() && !form.phoneHome.trim()) out.push('a phone number');
     if (!form.ownerName.trim() || !form.ownerAddress.trim()) out.push('owner info');
+    if (form.noWrittenLease && !form.initialRentNoLease.trim()) out.push('your initial rent (no lease)');
     return out;
   }, [form]);
 
@@ -572,6 +581,10 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
         scrieDrie: form.scrieDrie,
         section8: form.section8 !== 'none' ? form.section8 : undefined,
         coop: form.coop,
+        noWrittenLease: form.noWrittenLease,
+        initialRentNoLease: form.noWrittenLease
+          ? Number.parseFloat(form.initialRentNoLease) || undefined
+          : undefined,
         electricityIncluded: form.electricityIncluded,
         ownerName: form.ownerName.trim() || undefined,
         ownerAddress: form.ownerAddress.trim() || undefined,
@@ -777,6 +790,33 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                     <Toggle label="Co-op apartment" value={form.coop} onChange={(v) => updateForm('coop', v)} />
                   </div>
                 </Card>
+
+                {/* Optional — does NOT block Generate. Covers RA-89 §8(b):
+                    the tenant's actual move-in may have started informally
+                    (month-to-month) before any written lease existed, in
+                    which case the rent goes in the form's "(b)" blank
+                    instead of "(a)". */}
+                <div className="rounded-[10px] border border-rule bg-paper-soft px-3 py-3">
+                  <Toggle label="Initially moved in without written lease" value={form.noWrittenLease} onChange={(v) => updateForm('noWrittenLease', v)} />
+                  {form.noWrittenLease && (
+                    <div className="mt-2 max-w-[200px]">
+                      <span className="eyebrow block">Initial rent (no lease)</span>
+                      <div className="relative mt-1.5">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted font-mono text-sm">$</span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="0.01"
+                          value={form.initialRentNoLease}
+                          onChange={(e) => updateForm('initialRentNoLease', e.target.value)}
+                          placeholder="1,800.00"
+                          className={`pl-6 ${inputClass} font-mono`}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Optional — does NOT block Generate. Default "No" is a
                     fine answer on its own; the index # is only useful (and

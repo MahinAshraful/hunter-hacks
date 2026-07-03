@@ -38,6 +38,8 @@ export type Ra89Input = {
   // §8 move-in
   moveInDate?: string;       // ISO YYYY-MM-DD
   initialRent?: number;
+  noWrittenLease?: boolean;  // true → fill §8(b) instead of §8(a)
+  initialRentNoLease?: number;
 
   // §10 electricity
   electricityIncluded?: boolean | null;
@@ -161,14 +163,29 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
   // tenant's very first lease as the legal-rent baseline and starts
   // years_analyzed at the SECOND lease, so years_analyzed[0] is one
   // lease too late for "when did you move in / what did you pay."
+  //
+  // The real form requires completing EXACTLY ONE of (a) "with a
+  // written lease" (rent → `rent`, plus term/commencing/expiring) or
+  // (b) "without a written lease" (rent → `rent_2`) — never both.
   const baseline = input.estimate.baseline_lease;
   const moveIn = input.moveInDate ?? baseline?.lease_start;
   const mi = splitIso(moveIn);
   s('Month', mi.m);
   s('Day', mi.d);
   s('Year', mi.y);
-  const initialRent = input.initialRent ?? baseline?.monthly_rent;
-  if (initialRent) s('rent', usd(initialRent));
+  if (input.noWrittenLease) {
+    if (input.initialRentNoLease) s('rent_2', usd(input.initialRentNoLease));
+  } else {
+    const initialRent = input.initialRent ?? baseline?.monthly_rent;
+    if (initialRent) s('rent', usd(initialRent));
+    if (baseline) {
+      s('a  with a written lease of', String(baseline.term_months === 24 ? 2 : 1));
+      const commencing = splitIso(baseline.lease_start);
+      s('Month_2', commencing.m); s('Day_2', commencing.d); s('Year_2', commencing.y);
+      const expiring = splitIso(baseline.lease_end);
+      s('Month_3', expiring.m); s('Day_3', expiring.d); s('Year_3', expiring.y);
+    }
+  }
 
   // ── §9 Current rent ─────────────────────────────────────────────────
   s('My current rent is', usd(input.estimate.actual_rent_monthly));

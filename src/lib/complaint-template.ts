@@ -54,7 +54,7 @@ Sections to cover, in this order — each on its own line:
 §6a SCRIE/DRIE: Yes | No (from tenant.scrie_drie)
 §6b Section 8 program: None | HUD | NYCHA | HCV | HPD (from tenant.section_8)
 §7  Co-op apartment: Yes | No (from tenant.coop)
-§8  Move-in date / initial rent: <move_in.date written 'Month D, YYYY'> / $<move_in.initial_rent with thousands separators>/mo (with a <move_in.lease_term_years>-year initial lease)
+§8  Move-in date / initial rent: <move_in.date written 'Month D, YYYY'> / $<move_in.initial_rent with thousands separators>/mo <if move_in.had_written_lease is true, write "(with a <move_in.lease_term_years>-year initial lease)"; if false, write "(moved in without a written lease)">
 §9  Current rent: $<actual_rent_monthly>/mo (use thousands separators, two decimals, e.g. "$2,200.00")
 §10 Electricity included in rent: <if electricity_included is true → "Yes — included in rent"; if false → "No — billed separately"; if null → "Verify on your lease (typically included for pre-1974 stabilized buildings)">
 §11 Owner/agent — name, address, phone: <owner.name> · <owner.address> · <owner.phone>
