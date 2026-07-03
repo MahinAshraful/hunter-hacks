@@ -12,7 +12,7 @@
 // the way to re-discover them; this file would need updating to match.
 // ──────────────────────────────────────────────────────────────────────
 
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, type PDFForm } from 'pdf-lib';
 import type { Estimate } from './overcharge';
 
 export type Ra89Input = {
@@ -70,11 +70,11 @@ export type Ra89Input = {
 // Swallows "field doesn't exist" / "wrong field type" errors on purpose
 // — if DHCR's PDF is missing a field we expect, we'd rather silently
 // skip that one value than blow up the whole fill for every other field.
-function set(form: Awaited<ReturnType<typeof PDFDocument.prototype.getForm>>, name: string, value: string) {
+function set(form: PDFForm, name: string, value: string) {
   try { form.getTextField(name).setText(value); } catch { /* field absent or wrong type */ }
 }
 
-function check(form: Awaited<ReturnType<typeof PDFDocument.prototype.getForm>>, name: string, checked: boolean) {
+function check(form: PDFForm, name: string, checked: boolean) {
   try {
     const cb = form.getCheckBox(name);
     if (checked) cb.check(); else cb.uncheck();
@@ -275,7 +275,9 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
 // Browser-only "save this Uint8Array as a file" — wraps it in a Blob,
 // makes a temporary object URL, and fakes a click on an <a download>.
 export function downloadRa89(bytes: Uint8Array, bbl: string) {
-  const blob = new Blob([bytes], { type: 'application/pdf' });
+  // Uint8Array.from re-copies onto a plain ArrayBuffer — pdf-lib's output
+  // is typed Uint8Array<ArrayBufferLike>, which Blob's typings reject.
+  const blob = new Blob([Uint8Array.from(bytes)], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

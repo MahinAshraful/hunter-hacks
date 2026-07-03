@@ -48,7 +48,3 @@ export function getIncrease(leaseStart: Date | string, termMonths: LeaseTerm): R
     notes: order.notes,
   };
 }
-
-export function listOrders(): RgbOrder[] {
-  return ORDERS.slice();
-}

@@ -94,13 +94,13 @@ function monthsBetween(startIso: string, endIso: string): number {
 }
 // Approximate the number of months between two ISO dates (fractional allowed).
 
+// Return months of the lease that overlap the statute window starting at `windowStart`.
 function monthsOverlapping(leaseStart: string, leaseEnd: string, windowStart: string): number {
   const startMs = Math.max(parseDate(leaseStart).getTime(), parseDate(windowStart).getTime());
   const endMs = parseDate(leaseEnd).getTime();
   if (endMs <= startMs) return 0;
   return (endMs - startMs) / (1000 * 60 * 60 * 24 * 30.4375);
 }
-// Return months of the lease that ovetarting at `windowStart`.rlap the statute window s
 
 function sortHistory(history: LeaseEntry[]): LeaseEntry[] {
   return history.slice().sort((a, b) => a.startDate.localeCompare(b.startDate));
@@ -126,8 +126,8 @@ export function estimate(input: EstimateInput): Estimate {
   ];
 
   // Walk leases oldest-to-newest so each one builds on the prior legal rent.
-  const fullHistory = sortHistory(input.history);
-  if (fullHistory.length === 0) {
+  const history = sortHistory(input.history);
+  if (history.length === 0) {
     return {
       mode: 'history_only',
       legal_rent_monthly: 0,
@@ -140,7 +140,7 @@ export function estimate(input: EstimateInput): Estimate {
     };
   }
 
-  if (hasOverlappingLeases(fullHistory)) {
+  if (hasOverlappingLeases(history)) {
     return {
       mode: 'history_only',
       legal_rent_monthly: 0,
@@ -152,8 +152,6 @@ export function estimate(input: EstimateInput): Estimate {
       baseline_lease: null,
     };
   }
-
-  const history = fullHistory;
 
   // The actual move-in lease — sorted earliest-first above, so this is
   // genuinely the first lease the tenant ever signed for this unit, NOT
@@ -170,16 +168,14 @@ export function estimate(input: EstimateInput): Estimate {
   const statuteStart = addYearsUtc(parseDate(today), -STATUTE_YEARS).toISOString().slice(0, 10);
 
   const years: YearAnalysis[] = [];
-  const mode: 'history_only' = 'history_only';
 
   // First lease on record is taken as the legal rent baseline; we start comparing from the second.
   let prevLegalRent = history[0].monthlyRent;
-  let startIndex = 1;
   caveats.unshift(
     'The first lease in your history is treated as the starting legal rent. If that first rent was itself an overcharge, this estimator cannot detect it.',
   );
 
-  for (let i = startIndex; i < history.length; i++) {
+  for (let i = 1; i < history.length; i++) {
     const lease = history[i];
     // Find the RGB order and allowed % increase in effect when this lease started.
     const order = getOrder(lease.startDate);
@@ -248,7 +244,7 @@ export function estimate(input: EstimateInput): Estimate {
   );
 
   return {
-    mode,
+    mode: 'history_only',
     legal_rent_monthly: legalRentMonthly,
     actual_rent_monthly: actualRentMonthly,
     overcharge_monthly: overchargeMonthly,

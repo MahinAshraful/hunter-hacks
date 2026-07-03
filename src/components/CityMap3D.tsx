@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import maplibregl, { type Map as MLMap, type LngLatLike } from 'maplibre-gl';
+import maplibregl, {
+  type Map as MLMap,
+  type LngLatLike,
+  type MapGeoJSONFeature,
+} from 'maplibre-gl';
 
 export type MapStatus = 'idle' | 'flying' | 'arrived';
 
@@ -233,6 +237,21 @@ function bufferGeometry(g: GeoJSON.Geometry, offsetMeters: number): GeoJSON.Geom
   return g;
 }
 
+// queryRenderedFeatures returns GeoJSONFeature class instances whose own
+// properties include `_vectorTileFeature` (a class instance). If one of
+// those leaks into a GeoJSON source's setData(), maplibre posts it to its
+// worker, whose serializer throws "can't serialize object of unregistered
+// class …". Strip features down to plain GeoJSON before anything
+// downstream can hold onto them.
+function toPlainFeature(f: MapGeoJSONFeature): GeoJSON.Feature {
+  return {
+    type: 'Feature',
+    id: f.id,
+    properties: { ...(f.properties ?? {}) },
+    geometry: f.geometry,
+  };
+}
+
 // Combine all rendered tile features that reference the same building
 // into one geometry. For OpenMapTiles' building layer this isn't perfect
 // but is a reasonable union for visual purposes.
@@ -267,7 +286,10 @@ function combineToFeature(features: GeoJSON.Feature[]): GeoJSON.Feature | null {
 export default function CityMap3D({ target, onStatusChange, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
-  const styleReadyRef = useRef(false);
+  // State (not a ref) so the fly-to / reset effects below re-run once the
+  // style finishes loading — otherwise a target picked before 'load' fires
+  // would never trigger the flight.
+  const [styleReady, setStyleReady] = useState(false);
   const targetMarkerRef = useRef<maplibregl.Marker | null>(null);
   const slowSpinRef = useRef<number | null>(null);
   const userInteractedRef = useRef(false);
@@ -277,7 +299,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
     bin: string;
     feature: GeoJSON.Feature;
   } | null>(null);
-  const [, force] = useState(0);
+  // Whether a flight has started — gates the reset-to-globe effect so it
+  // only runs when there is actually something to reset.
+  const hadTargetRef = useRef(false);
 
   // ── init map ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -292,8 +316,8 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       bearing: 0,
       attributionControl: { compact: true },
       maxPitch: 80,
-      ...({ antialias: true } as Record<string, unknown>),
-    } as ConstructorParameters<typeof maplibregl.Map>[0]);
+      canvasContextAttributes: { antialias: true },
+    });
 
     mapRef.current = map;
     map.addControl(
@@ -323,22 +347,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
     window.addEventListener('orientationchange', onWinResize);
 
     map.on('load', () => {
-      try {
-        const m = map as unknown as { setProjection?: (p: { type: string }) => void };
-        m.setProjection?.({ type: 'globe' });
-      } catch { /* ignore */ }
-
-      try {
-        const m = map as unknown as { setFog?: (f: Record<string, unknown>) => void };
-        m.setFog?.({
-          range: [0.8, 8],
-          color: '#1a1f2a',
-          'horizon-blend': 0.2,
-          'high-color': '#c8a878',
-          'space-color': '#0c0f17',
-          'star-intensity': 0.55,
-        });
-      } catch { /* ignore */ }
+      map.setProjection({ type: 'globe' });
 
       // Slow globe spin while idle
       const spin = () => {
@@ -352,8 +361,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       slowSpinRef.current = window.setTimeout(spin, 600);
 
       attachBuildingLayers(map);
-      styleReadyRef.current = true;
-      force((v) => v + 1);
+      setStyleReady(true);
     });
 
     const stopSpin = () => {
@@ -379,9 +387,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       resizeObsRef.current = null;
       map.remove();
       mapRef.current = null;
-      styleReadyRef.current = false;
+      setStyleReady(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // ── pre-fetch building footprint by BIN as soon as a target is picked
@@ -411,8 +419,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
   // ── fly to target ────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !styleReadyRef.current || !target) return;
+    if (!map || !styleReady || !target) return;
 
+    hadTargetRef.current = true;
     userInteractedRef.current = true;
     if (slowSpinRef.current) {
       clearTimeout(slowSpinRef.current);
@@ -491,13 +500,14 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       clearTimeout(t2);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target?.lat, target?.lng, target?.bin]);
+  }, [target?.lat, target?.lng, target?.bin, styleReady]);
 
   // ── reset to globe when target cleared ───────────────────────────────
   useEffect(() => {
-    if (target) return;
+    if (target || !hadTargetRef.current) return;
     const map = mapRef.current;
-    if (!map || !styleReadyRef.current) return;
+    if (!map || !styleReady) return;
+    hadTargetRef.current = false;
     if (targetMarkerRef.current) {
       targetMarkerRef.current.remove();
       targetMarkerRef.current = null;
@@ -513,7 +523,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
     });
     onStatusChange?.('idle');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target]);
+  }, [target, styleReady]);
 
   return (
     <div className={className ?? 'absolute inset-0'}>
@@ -743,13 +753,15 @@ function resolveBuildingFeature(
     // 60-px box at z18 ≈ 18m — wide enough to catch the building even
     // if the address geocoded a few meters away.
     const radius = 60;
-    const features = m.queryRenderedFeatures(
-      [
-        [point.x - radius, point.y - radius],
-        [point.x + radius, point.y + radius],
-      ],
-      { layers: ['ledger-buildings-3d'] },
-    ) as unknown as GeoJSON.Feature[];
+    const features = m
+      .queryRenderedFeatures(
+        [
+          [point.x - radius, point.y - radius],
+          [point.x + radius, point.y + radius],
+        ],
+        { layers: ['ledger-buildings-3d'] },
+      )
+      .map(toPlainFeature);
 
     if (!features.length) return null;
 

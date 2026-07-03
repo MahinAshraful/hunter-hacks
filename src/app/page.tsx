@@ -31,18 +31,21 @@ export default function Home() {
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
   const [mapStatus, setMapStatus] = useState<MapStatus>('idle');
-  // Verdict is shown only after the cinematic flight lands. This keeps
-  // the user from being yanked away from the animation by an auto-scroll.
-  const [verdictRevealed, setVerdictRevealed] = useState(false);
+  // Safety net for a misbehaving map: flips true 7s after a lookup lands
+  // without the map reporting 'arrived' (see the timer effect below).
+  const [fallbackRevealed, setFallbackRevealed] = useState(false);
 
   const verdictRef = useRef<HTMLDivElement>(null);
   const formRef    = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const draftRef   = useRef<HTMLDivElement>(null);
   const heroRef    = useRef<HTMLDivElement>(null);
-  const fallbackRevealRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const visibleLookup = lookup && verdictRevealed ? lookup : null;
+  // Verdict is shown only after the cinematic flight lands (or the 7s
+  // fallback fires). This keeps the user from being yanked away from the
+  // animation by an auto-scroll.
+  const verdictRevealed = !!lookup && (mapStatus === 'arrived' || fallbackRevealed);
+  const visibleLookup = verdictRevealed ? lookup : null;
 
   const stage: Stage = useMemo(() => {
     if (estimate && visibleLookup?.status === 'likely_stabilized') return 'complaint';
@@ -59,29 +62,13 @@ export default function Home() {
     return set;
   }, [visibleLookup, estimate]);
 
-  // Reveal the verdict once the map has finished flying (or after a
-  // safety timeout in case the map never reports 'arrived').
+  // Arm the fallback reveal timer while a lookup is waiting on the map.
+  // `fallbackRevealed` is reset in handleSelect/handleReset (the only two
+  // places that clear `lookup`).
   useEffect(() => {
-    if (!lookup) {
-      setVerdictRevealed(false);
-      if (fallbackRevealRef.current) {
-        clearTimeout(fallbackRevealRef.current);
-        fallbackRevealRef.current = null;
-      }
-      return;
-    }
-    if (mapStatus === 'arrived') {
-      setVerdictRevealed(true);
-    } else if (!fallbackRevealRef.current) {
-      // Safety net: always reveal after 7s even if the map is misbehaving
-      fallbackRevealRef.current = setTimeout(() => setVerdictRevealed(true), 7000);
-    }
-    return () => {
-      if (fallbackRevealRef.current && mapStatus === 'arrived') {
-        clearTimeout(fallbackRevealRef.current);
-        fallbackRevealRef.current = null;
-      }
-    };
+    if (!lookup || mapStatus === 'arrived') return;
+    const t = setTimeout(() => setFallbackRevealed(true), 7000);
+    return () => clearTimeout(t);
   }, [lookup, mapStatus]);
 
   // After the map arrives, *softly* nudge mobile viewers down to the
@@ -113,6 +100,7 @@ export default function Home() {
     setLookupError(null);
     setEstimate(null);
     setEstimateError(null);
+    setFallbackRevealed(false);
     setIsLooking(true);
 
     try {
@@ -168,7 +156,7 @@ export default function Home() {
     setEstimate(null);
     setLookupError(null);
     setEstimateError(null);
-    setVerdictRevealed(false);
+    setFallbackRevealed(false);
     setMapStatus('idle');
     heroRef.current?.scrollIntoView({ behavior: 'smooth' });
   }

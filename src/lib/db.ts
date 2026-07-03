@@ -95,7 +95,7 @@ export function getSqlite(): Database.Database {
     //     skip the WAL pragma anxiety entirely once we're there.
     if (!found) {
       throw new Error(
-        `data/app.db not found in deployed function. Tried multiple locations — see /api/_debug for the full list. cwd=${process.cwd()}`,
+        `data/app.db not found in deployed function. Tried multiple locations — see /api/debug for the full list. cwd=${process.cwd()}`,
       );
     }
     if (!fs.existsSync(TMP_DB_PATH)) {
@@ -146,15 +146,6 @@ export function initSchema(): void {
     );
     CREATE INDEX IF NOT EXISTS idx_buildings_zip  ON buildings(zipcode);
     CREATE INDEX IF NOT EXISTS idx_buildings_addr ON buildings(address);
-
-    CREATE TABLE IF NOT EXISTS rgb_increases (
-      order_no         INTEGER PRIMARY KEY,
-      lease_start_from TEXT NOT NULL,
-      lease_start_to   TEXT NOT NULL,
-      one_year_pct     REAL NOT NULL,
-      two_year_pct     REAL NOT NULL,
-      notes            TEXT
-    );
 
     CREATE TABLE IF NOT EXISTS lookups (
       id                          INTEGER PRIMARY KEY AUTOINCREMENT,

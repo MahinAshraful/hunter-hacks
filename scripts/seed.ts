@@ -5,38 +5,15 @@ import { getSqlite, initSchema } from "../src/lib/db";
 
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 const SEED_DIR = path.join(PROJECT_ROOT, "data", "seed");
-const RGB_PATH = path.join(SEED_DIR, "rgb_orders.json");
 const RENTSTAB_PATH = path.join(SEED_DIR, "rentstab.csv");
 const RENTSTAB_V2_PATH = path.join(SEED_DIR, "rentstab_v2.csv");
 
 const RENTSTAB_YEARS = [2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017];
 const RENTSTAB_V2_YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024];
 
-type RgbOrder = {
-  order_no: number;
-  lease_start_from: string;
-  lease_start_to: string;
-  one_year_pct: number;
-  two_year_pct: number;
-  notes: string | null;
-};
-
-function seedRgb(): number {
-  const sqlite = getSqlite();
-  const raw = fs.readFileSync(RGB_PATH, "utf8");
-  const orders: RgbOrder[] = JSON.parse(raw);
-
-  sqlite.exec("DELETE FROM rgb_increases;");
-  const stmt = sqlite.prepare(`
-    INSERT INTO rgb_increases (order_no, lease_start_from, lease_start_to, one_year_pct, two_year_pct, notes)
-    VALUES (@order_no, @lease_start_from, @lease_start_to, @one_year_pct, @two_year_pct, @notes)
-  `);
-  const tx = sqlite.transaction((rows: RgbOrder[]) => {
-    for (const r of rows) stmt.run(r);
-  });
-  tx(orders);
-  return orders.length;
-}
+// RGB order data is NOT seeded into SQLite — src/lib/rgb.ts imports
+// data/seed/rgb_orders.json directly, so the JSON is the single source
+// of truth for RGB increases.
 
 function ynToInt(v: string | undefined): number {
   return v?.trim().toUpperCase() === "Y" ? 1 : 0;
@@ -220,10 +197,6 @@ async function enrichWithV2(): Promise<{ updated: number; addedFromV2Only: numbe
 async function main() {
   const t0 = Date.now();
   initSchema();
-
-  console.log("→ seeding RGB orders…");
-  const rgbCount = seedRgb();
-  console.log(`  ${rgbCount} orders inserted`);
 
   console.log("→ seeding rentstab.csv (this is the slow one, ~46k rows)…");
   const buildingsCount = await seedRentstab();

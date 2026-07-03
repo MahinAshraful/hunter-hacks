@@ -183,7 +183,7 @@ test('overcharge: pre-HSTPA vacancy lease uses historical vacancy allowance', ()
   };
   const result = estimate(input);
   assert.equal(result.years_analyzed[0].vacancy_lease, true);
-  near(result.years_analyzed[0].allowed_pct, 19.0);
+  assert.equal(result.years_analyzed[0].allowed_pct, 19.0);
   near(result.years_analyzed[0].legal_monthly, 1190);
 });
 
@@ -213,6 +213,10 @@ test('overcharge: missing RGB order carries legal rent forward unchanged', () =>
   const result = estimate(input);
   assert.equal(result.years_analyzed[0].allowed_pct, null);
   assert.equal(result.years_analyzed[0].legal_monthly, 100);
-  near(result.years_analyzed[0].overcharge_monthly, 50);
+  // With no RGB order there is no basis to call the increase an
+  // overcharge — the lease is excluded from the total (and a caveat
+  // explains why) rather than flagged.
+  assert.equal(result.years_analyzed[0].overcharge_monthly, 0);
+  assert.equal(result.years_analyzed[0].overcharge_within_limit, 0);
   assert.ok(result.caveats.some((c) => c.includes('No RGB order found')));
 });

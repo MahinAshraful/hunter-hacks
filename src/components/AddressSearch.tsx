@@ -21,22 +21,25 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // All setState happens inside the (async) timeout callback rather than
+  // the effect body — short inputs just clear the dropdown on a 0ms tick.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = inputValue.trim();
-    if (trimmed.length < 3) {
-      setResults([]);
-      setIsOpen(false);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
+    const tooShort = trimmed.length < 3;
     debounceRef.current = setTimeout(async () => {
+      if (tooShort) {
+        setResults([]);
+        setIsOpen(false);
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
       const data = await autocomplete(trimmed);
       setResults(data);
       setIsOpen(data.length > 0);
       setIsLoading(false);
-    }, 220);
+    }, tooShort ? 0 : 220);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -126,6 +129,7 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
             } text-ink-text placeholder:text-muted/80 focus:outline-none disabled:opacity-50`}
             role="combobox"
             aria-expanded={isOpen}
+            aria-controls="address-search-listbox"
             aria-autocomplete="list"
             aria-haspopup="listbox"
             aria-activedescendant={activeIndex >= 0 ? `option-${activeIndex}` : undefined}
@@ -148,6 +152,7 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
 
       {isOpen && results.length > 0 && (
         <ul
+          id="address-search-listbox"
           role="listbox"
           className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-[12px] border border-rule-strong bg-bone py-1 shadow-[0_24px_60px_-20px_rgba(20,14,6,0.35)] animate-fade-in-up"
         >
