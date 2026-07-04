@@ -31,6 +31,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Verdict } from '@/lib/stabilization';
 import type { Estimate } from '@/lib/overcharge';
 import { getOrder } from '@/lib/rgb';
+import { useI18n } from '@/lib/i18n';
+import type { MessageKey } from '@/lib/i18n/messages/en';
 import type {
   ComplaintInput,
   OverchargeCause,
@@ -77,9 +79,12 @@ type FormState = {
   mailingZip: string;
   phoneHome: string;
   phoneDay: string;
-  tenantType: TenantType;
+  // null = unanswered, so the dropdown shows an empty "— select one —"
+  // placeholder and Generate stays blocked until the tenant picks a real
+  // value (even if that value is the common one, 'prime' / 'none').
+  tenantType: TenantType | null;
   scrieDrie: boolean;
-  section8: Section8Program;
+  section8: Section8Program | null;
   coop: boolean;
   noWrittenLease: boolean;
   initialRentNoLease: string;
@@ -88,22 +93,22 @@ type FormState = {
   ownerAddress: string;
   ownerPhone: string;
   causes: OverchargeCause[];
+  // §15 — collected only when the 'security_deposit' cause is checked;
+  // amount + date are then required (see requiredMissing). usedForRent is
+  // the optional "vacated & applied deposit to rent?" yes/no.
+  securityDepositAmount: string;
+  securityDepositPaidOn: string;
+  securityDepositUsedForRent: boolean | null;
   raisedInCourt: boolean;
   courtIndexNo: string;
   tone: Tone;
-  // "Touched" flags for the required section below. tenantType/scrieDrie/
-  // section8 all default to a legitimate real answer ('prime'/false/
-  // 'none'), so the value alone can't distinguish "the tenant
-  // deliberately chose this" from "untouched default" — these flags
-  // exist purely so the Generate button can require an explicit answer
-  // instead of silently accepting the default. (electricityIncluded
-  // doesn't need one: its default is `null`, which already means
-  // "unanswered"; causes has a real empty state too.) Persisted to
-  // localStorage along with the rest of FormState, so a tenant who
-  // already confirmed these isn't asked again.
-  tenantTypeTouched: boolean;
+  // SCRIE/DRIE is a yes/no toggle whose default (false) is itself a valid
+  // answer, so the value alone can't tell "tenant said no" from "untouched".
+  // This flag lets Generate require an explicit choice. (tenantType and
+  // section8 don't need one — their unanswered state is `null`; likewise
+  // electricityIncluded is `null` and causes has a real empty state.)
+  // Persisted to localStorage so a returning tenant isn't re-asked.
   scrieDrieTouched: boolean;
-  section8Touched: boolean;
 };
 
 const EMPTY_FORM: FormState = {
@@ -116,9 +121,9 @@ const EMPTY_FORM: FormState = {
   mailingZip: '',
   phoneHome: '',
   phoneDay: '',
-  tenantType: 'prime',
+  tenantType: null,
   scrieDrie: false,
-  section8: 'none',
+  section8: null,
   coop: false,
   noWrittenLease: false,
   initialRentNoLease: '',
@@ -127,28 +132,29 @@ const EMPTY_FORM: FormState = {
   ownerAddress: '',
   ownerPhone: '',
   causes: ['other'],
+  securityDepositAmount: '',
+  securityDepositPaidOn: '',
+  securityDepositUsedForRent: null,
   raisedInCourt: false,
   courtIndexNo: '',
   tone: 'neutral',
-  tenantTypeTouched: false,
   scrieDrieTouched: false,
-  section8Touched: false,
 };
 
 // Checkbox options for RA-89 §13 ("why are you filing"). The `id`s here
 // are the OverchargeCause union from src/lib/complaint.ts and flow
 // straight through to both the AI prompt and the RA-89 checkbox mapping
 // in src/lib/ra89-fill.ts (search for `Check Box25`..`Check Box31`).
-const CAUSE_OPTIONS: { id: OverchargeCause; label: string }[] = [
-  { id: 'other', label: 'Other (rent increase above the RGB legal ceiling. Select if there was an overcharge calculated.)' },
-  { id: 'mci', label: 'MCI increase (There was a rent hike because your whole building was improved)' },
-  { id: 'iai', label: 'IAI increase (There was a rent hike because your specific apartment was improved)' },
-  { id: 'fmra', label: 'FMRA (Landlord increased rent before registration)' },
-  { id: 'rent_reduction_order', label: 'Rent Reduction Order outstanding (landlord did not lower rent after DHCR order)' },
-  { id: 'missing_registrations', label: 'Missing registrations (landlord failed to register the rent)' },
-  { id: 'parking', label: 'Parking charges (illegal or excessive parking fees)' },
-  { id: 'illegal_fees', label: 'Illegal fees / surcharges (unauthorized extra charges)' },
-  { id: 'security_deposit', label: 'Security deposit > 1 month (landlord charged more than one month’s deposit)' },
+const CAUSE_OPTIONS: { id: OverchargeCause; labelKey: MessageKey }[] = [
+  { id: 'other', labelKey: 'cause.other' },
+  { id: 'mci', labelKey: 'cause.mci' },
+  { id: 'iai', labelKey: 'cause.iai' },
+  { id: 'fmra', labelKey: 'cause.fmra' },
+  { id: 'rent_reduction_order', labelKey: 'cause.rro' },
+  { id: 'missing_registrations', labelKey: 'cause.missingReg' },
+  { id: 'parking', labelKey: 'cause.parking' },
+  { id: 'illegal_fees', labelKey: 'cause.illegalFees' },
+  { id: 'security_deposit', labelKey: 'cause.secDeposit' },
 ];
 
 const inputClass =
@@ -173,6 +179,7 @@ function cityStateFromAddress(addr: string): { city?: string; state?: string } {
 }
 
 export default function ComplaintPreview({ verdict, estimate, address, bin }: Props) {
+  const { t } = useI18n();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [showRaw, setShowRaw] = useState(false);
   const [ownerLookup, setOwnerLookup] = useState<OwnerLookupState>({ status: 'idle' });
@@ -342,9 +349,11 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
     mailingZip: form.mailingSameAsBuilding ? undefined : form.mailingZip.trim() || undefined,
     tenantPhoneHome: form.phoneHome.trim() || undefined,
     tenantPhoneDay: form.phoneDay.trim() || undefined,
-    tenantType: form.tenantType,
+    // Generate is blocked until these are answered, so they're non-null
+    // here; `?? undefined` keeps the payload well-typed regardless.
+    tenantType: form.tenantType ?? undefined,
     scrieDrie: form.scrieDrie || undefined,
-    section8: form.section8 !== 'none' ? form.section8 : undefined,
+    section8: form.section8 && form.section8 !== 'none' ? form.section8 : undefined,
     coop: form.coop || undefined,
     noWrittenLease: form.noWrittenLease || undefined,
     initialRentNoLease: form.noWrittenLease
@@ -355,6 +364,16 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
     ownerAddress: form.ownerAddress.trim() || undefined,
     ownerPhone: form.ownerPhone.trim() || undefined,
     causes: form.causes.length > 0 ? form.causes : undefined,
+    // §15 only travels when the tenant actually flagged the deposit cause.
+    securityDepositAmount: form.causes.includes('security_deposit')
+      ? Number.parseFloat(form.securityDepositAmount) || undefined
+      : undefined,
+    securityDepositPaidOn: form.causes.includes('security_deposit')
+      ? form.securityDepositPaidOn || undefined
+      : undefined,
+    securityDepositUsedForRent: form.causes.includes('security_deposit')
+      ? form.securityDepositUsedForRent ?? undefined
+      : undefined,
     raisedInCourt: form.raisedInCourt || undefined,
     courtIndexNo: form.raisedInCourt ? form.courtIndexNo.trim() || undefined : undefined,
     tone: form.tone,
@@ -364,11 +383,11 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
   // purely informational, does NOT block drafting (the AI just leaves
   // bracketed placeholders like "[ASK TENANT]" for whatever's absent).
   const missing = useMemo(() => {
-    const out: string[] = [];
-    if (!form.tenantName.trim()) out.push('your name');
-    if (!form.phoneDay.trim() && !form.phoneHome.trim()) out.push('a phone number');
-    if (!form.ownerName.trim() || !form.ownerAddress.trim()) out.push('owner info');
-    if (form.noWrittenLease && !form.initialRentNoLease.trim()) out.push('your initial rent (no lease)');
+    const out: MessageKey[] = [];
+    if (!form.tenantName.trim()) out.push('missing.yourName');
+    if (!form.phoneDay.trim() && !form.phoneHome.trim()) out.push('missing.phone');
+    if (!form.ownerName.trim() || !form.ownerAddress.trim()) out.push('missing.owner');
+    if (form.noWrittenLease && !form.initialRentNoLease.trim()) out.push('missing.initialRent');
     return out;
   }, [form]);
 
@@ -379,20 +398,23 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
   // deliberately NOT in this list — that one stays optional, default
   // "No" is an acceptable answer on its own.
   //
-  // tenantType/scrieDrie/section8 all default to a legitimate real
-  // answer ('prime'/false/'none'), so completion is tracked via the
-  // *Touched flags on FormState rather than the value itself (see the
-  // comment on those flags' declaration above). electricityIncluded
-  // doesn't need a touched flag: its default is `null`, which already
-  // means "unanswered". causes has a real empty state (the tenant
-  // unchecked everything), so a length check is enough there.
+  // tenantType/section8/electricityIncluded are `null` until answered, so
+  // a null check is enough. scrieDrie is a yes/no toggle whose default
+  // (false) is a valid answer, so it tracks completion via scrieDrieTouched
+  // (see the flag's declaration above). causes has a real empty state (the
+  // tenant unchecked everything), so a length check is enough there.
   const requiredMissing = useMemo(() => {
-    const out: string[] = [];
-    if (!form.tenantTypeTouched) out.push('tenant type');
-    if (!form.scrieDrieTouched) out.push('SCRIE/DRIE status');
-    if (!form.section8Touched) out.push('Section 8 status');
-    if (form.electricityIncluded === null) out.push('electricity in rent');
-    if (form.causes.length === 0) out.push('at least one cause (§13)');
+    const out: MessageKey[] = [];
+    if (form.tenantType === null) out.push('missing.tenantType');
+    if (!form.scrieDrieTouched) out.push('missing.scrieDrie');
+    if (form.section8 === null) out.push('missing.section8');
+    if (form.electricityIncluded === null) out.push('missing.electricity');
+    if (form.causes.length === 0) out.push('missing.cause');
+    // Picking the security-deposit cause makes its amount + date mandatory.
+    if (form.causes.includes('security_deposit')) {
+      if (!(Number.parseFloat(form.securityDepositAmount) > 0)) out.push('missing.secDepAmount');
+      if (!form.securityDepositPaidOn.trim()) out.push('missing.secDepDate');
+    }
     return out;
   }, [form]);
 
@@ -462,7 +484,9 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
           try { event = JSON.parse(line); } catch { continue; }
           if (event.type === 'provider') setProvider(event.data as Provider);
           else if (event.type === 'text' && typeof event.data === 'string') setText((p) => p + (event.data as string));
-          else if (event.type === 'error') throw new Error(typeof event.data === 'string' ? event.data : 'Streaming error');
+          // The route only ever sends one generic failure message — show
+          // the locally translated equivalent instead of the raw English.
+          else if (event.type === 'error') throw new Error(t('draft.error.service'));
         }
       }
       setPhase('done');
@@ -474,7 +498,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
         return;
       }
       console.error('Complaint draft failed:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong drafting the complaint.');
+      setError(err instanceof Error ? err.message : t('draft.error.failed'));
       setPhase('error');
     }
   }
@@ -511,16 +535,16 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
   // the body explicitly tells the tenant to attach the file they just
   // downloaded.
   function buildEmail(): { subject: string; body: string } {
-    const subject = `RA-89 Filing Packet — ${address.split(',')[0]}`;
+    const subject = t('email.subject', { street: address.split(',')[0] });
     const body = [
-      'Hi,',
+      t('email.hi'),
       '',
-      `Attached is my draft RA-89 filing packet for ${address}.`,
-      `BBL: ${verdict.bbl}`,
+      t('email.attached', { address }),
+      t('email.bbl', { bbl: verdict.bbl }),
       '',
-      'The PDF was generated by amirentstabilized.nyc and is a starting point — please review every line before filing.',
+      t('email.note'),
       '',
-      '— ' + (form.tenantName.trim() || 'A tenant'),
+      '— ' + (form.tenantName.trim() || t('email.aTenant')),
     ].join('\n');
     return { subject, body };
   }
@@ -577,9 +601,9 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
         address,
         phoneHome: form.phoneHome.trim() || undefined,
         phoneDay: form.phoneDay.trim() || undefined,
-        tenantType: form.tenantType,
+        tenantType: form.tenantType ?? undefined,
         scrieDrie: form.scrieDrie,
-        section8: form.section8 !== 'none' ? form.section8 : undefined,
+        section8: form.section8 && form.section8 !== 'none' ? form.section8 : undefined,
         coop: form.coop,
         noWrittenLease: form.noWrittenLease,
         initialRentNoLease: form.noWrittenLease
@@ -590,6 +614,15 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
         ownerAddress: form.ownerAddress.trim() || undefined,
         ownerPhone: form.ownerPhone.trim() || undefined,
         causes: form.causes,
+        securityDepositAmount: form.causes.includes('security_deposit')
+          ? Number.parseFloat(form.securityDepositAmount) || undefined
+          : undefined,
+        securityDepositPaidOn: form.causes.includes('security_deposit')
+          ? form.securityDepositPaidOn || undefined
+          : undefined,
+        securityDepositUsedForRent: form.causes.includes('security_deposit')
+          ? form.securityDepositUsedForRent ?? undefined
+          : undefined,
         raisedInCourt: form.raisedInCourt,
         courtIndexNo: form.courtIndexNo.trim() || undefined,
         estimate,
@@ -597,7 +630,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
       });
       downloadRa89(bytes, verdict.bbl);
     } catch (err) {
-      setRa89Error(err instanceof Error ? err.message : 'Failed to generate RA-89');
+      setRa89Error(err instanceof Error ? err.message : t('draft.error.ra89'));
     } finally {
       setRa89Filling(false);
     }
@@ -623,17 +656,17 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
     <section className="paper relative overflow-hidden animate-fade-in-up">
       <div className="absolute inset-x-0 top-0 h-[3px] bg-brass" />
       <div className="px-6 sm:px-8 pt-6 pb-7">
-        <span className="eyebrow">Section IV · Filing packet</span>
+        <span className="eyebrow">{t('draft.eyebrow')}</span>
         <h2 className="mt-1.5 font-display text-[28px] sm:text-[32px] leading-[1.05] tracking-tight text-ink-text">
-          {isDone ? 'Your packet is ready.' : 'Build your filing packet.'}
+          {isDone ? t('draft.titleReady') : t('draft.titleBuild')}
         </h2>
         <p className="mt-2 text-sm text-secondary max-w-xl">
           {isDone
-            ? 'A multi-page PDF you attach to the official RA-89 form. Preview, download, or send below.'
+            ? t('draft.subReady')
             : (
-                <>A polished PDF you attach to{' '}
+                <>{t('draft.subBuildPre')}
                   <a href="https://hcr.ny.gov/form-ra-89" target="_blank" rel="noopener noreferrer" className="underline decoration-brass/40 underline-offset-2 hover:text-brass-deep">
-                    DHCR Form RA-89
+                    {t('draft.subBuildLink')}
                   </a>.
                 </>
               )}
@@ -645,32 +678,32 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
         {!isDone && (
           <>
             {showFutureLeaseWarning && (
-              <div className="mt-6 rounded-[14px] border border-rust/30 bg-rust-wash/10 px-5 py-5">
+              <div className="mt-6 rounded-[14px] border border-rust/30 bg-rust-bg/40 px-5 py-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="eyebrow text-rust">Important</span>
+                  <span className="eyebrow text-rust">{t('draft.futureLease.important')}</span>
                   <span className="h-px flex-1 bg-rust/30" />
                 </div>
                 <p className="text-sm text-secondary">
-                  You can still draft an RA-89 packet now, but if your new lease has not started yet, this is only a projection. The form will only matter once the new lease begins.
+                  {t('draft.futureLease.p1')}
                 </p>
                 <div className="mt-4 rounded-[12px] border border-rule bg-bone p-4 text-sm text-ink-text space-y-3">
-                  <p className="font-semibold">What to do now:</p>
+                  <p className="font-semibold">{t('draft.futureLease.whatNow')}</p>
                   <ol className="list-decimal list-inside space-y-2">
                     <li>
-                      <strong>Document everything.</strong>
-                      Keep the signed lease, any rent increase notices, and the date the new rent starts. Get your DHCR rent history (Form REC-1).
+                      <strong>{t('draft.futureLease.s1t')}</strong>{' '}
+                      {t('draft.futureLease.s1b')}
                     </li>
                     <li>
-                      <strong>Try to fix it before the lease starts.</strong>
-                      Ask the landlord to renegotiate the rent or remove the increase. If you haven’t moved in yet, you may be able to back out or delay the start depending on local tenant law.
+                      <strong>{t('draft.futureLease.s2t')}</strong>{' '}
+                      {t('draft.futureLease.s2b')}
                     </li>
                     <li>
-                      <strong>Prepare to file later.</strong>
-                      If the new lease actually starts and you begin paying the higher rent, then the overcharge can become actionable. The complaint would cover the period after the lease starts, not the weeks before it.
+                      <strong>{t('draft.futureLease.s3t')}</strong>{' '}
+                      {t('draft.futureLease.s3b')}
                     </li>
                     <li>
-                      <strong>Seek advice.</strong>
-                      Talk to a tenant counselor, legal aid, or tenant union in NYC. They can tell you whether the lease is binding and whether there’s a path to cancel or renegotiate.
+                      <strong>{t('draft.futureLease.s4t')}</strong>{' '}
+                      {t('draft.futureLease.s4b')}
                     </li>
                   </ol>
                 </div>
@@ -679,72 +712,72 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
 
             <div className="mt-6 rounded-[14px] border border-brass/30 bg-brass-wash/40 px-5 py-5">
               <div className="flex items-center gap-2 mb-3">
-                <span className="eyebrow text-brass-deep">Quick fill</span>
+                <span className="eyebrow text-brass-deep">{t('draft.quickFill')}</span>
                 <span className="h-px flex-1 bg-brass/30" />
-                <span className="text-[10px] text-muted">3 essentials</span>
+                <span className="text-[10px] text-muted">{t('draft.essentials')}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Input label="Your full name" value={form.tenantName} onChange={(v) => updateForm('tenantName', v)} placeholder="Jane Tenant" />
-                <Input label="Phone (daytime)" value={form.phoneDay} onChange={(v) => updateForm('phoneDay', v)} placeholder="(212) 555-0143" />
+                <Input label={t('draft.fullName')} value={form.tenantName} onChange={(v) => updateForm('tenantName', v)} placeholder={t('draft.fullNamePh')} />
+                <Input label={t('draft.phoneDay')} value={form.phoneDay} onChange={(v) => updateForm('phoneDay', v)} placeholder="(212) 555-0143" />
                 <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-[10px] border border-brass/25 bg-bone p-3">
                   <div className="sm:col-span-2 flex items-center gap-2">
-                    <span className="eyebrow text-brass-deep">Owner / managing agent</span>
+                    <span className="eyebrow text-brass-deep">{t('draft.ownerBlock')}</span>
                     {ownerLookup.status === 'loading' ? (
                       <span className="text-[10px] text-muted flex items-center gap-1.5">
                         <span className="h-2.5 w-2.5 rounded-full border-2 border-brass border-t-transparent animate-spin" />
-                        Looking up HPD…
+                        {t('draft.hpdLooking')}
                       </span>
                     ) : ownerLookup.status === 'found' ? (
-                      <span className="text-[10px] text-verdigris font-semibold">✓ HPD match</span>
+                      <span className="text-[10px] text-verdigris font-semibold">{t('draft.hpdMatch')}</span>
                     ) : ownerLookup.status === 'not_found' ? (
-                      <span className="text-[10px] text-muted">No HPD record — find on your lease</span>
+                      <span className="text-[10px] text-muted">{t('draft.hpdNone')}</span>
                     ) : null}
                   </div>
-                  <div className="sm:col-span-2"><Input label="Name" value={form.ownerName} onChange={(v) => updateForm('ownerName', v)} placeholder="ACME Realty LLC" /></div>
-                  <div className="sm:col-span-2"><Input label="Mailing address" value={form.ownerAddress} onChange={(v) => updateForm('ownerAddress', v)} placeholder="100 Main St, New York, NY 10001" /></div>
+                  <div className="sm:col-span-2"><Input label={t('draft.ownerName')} value={form.ownerName} onChange={(v) => updateForm('ownerName', v)} placeholder={t('draft.ownerNamePh')} /></div>
+                  <div className="sm:col-span-2"><Input label={t('draft.ownerAddress')} value={form.ownerAddress} onChange={(v) => updateForm('ownerAddress', v)} placeholder={t('draft.ownerAddressPh')} /></div>
                 </div>
               </div>
             </div>
 
             <div className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-brass-deep">
-              <span>Customize</span>
-              <span className="text-xs font-normal text-muted">(unit, mailing address, tone, causes…)</span>
+              <span>{t('draft.customize')}</span>
+              <span className="text-xs font-normal text-muted">{t('draft.customizeHint')}</span>
             </div>
 
             <div className="mt-3 space-y-3">
-                <Card kicker="More about you">
+                <Card kicker={t('draft.moreAboutYou')}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Input label="Apartment unit" value={form.unit} onChange={(v) => updateForm('unit', v)} placeholder="4B" />
-                    <Input label="Phone (home)" value={form.phoneHome} onChange={(v) => updateForm('phoneHome', v)} placeholder="(optional)" optional />
+                    <Input label={t('draft.unit')} value={form.unit} onChange={(v) => updateForm('unit', v)} placeholder="4B" />
+                    <Input label={t('draft.phoneHome')} value={form.phoneHome} onChange={(v) => updateForm('phoneHome', v)} optional optionalLabel={t('common.optional')} />
                   </div>
                   <label className="mt-3 flex items-start gap-2.5 text-sm text-secondary cursor-pointer">
                     <input type="checkbox" checked={form.mailingSameAsBuilding} onChange={(e) => updateForm('mailingSameAsBuilding', e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-rule-strong text-brass focus:ring-brass/25" />
-                    <span>Mailing address is the same as the subject building.</span>
+                    <span>{t('draft.mailingSame')}</span>
                   </label>
                   {!form.mailingSameAsBuilding && (
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-12 gap-3">
-                      <div className="sm:col-span-12"><Input label="Mailing street + apt" value={form.mailingAddress} onChange={(v) => updateForm('mailingAddress', v)} placeholder="123 Other St, Apt 2A" /></div>
-                      <div className="sm:col-span-6"><Input label="City" value={form.mailingCity} onChange={(v) => updateForm('mailingCity', v)} /></div>
-                      <div className="sm:col-span-3"><Input label="State" value={form.mailingState} onChange={(v) => updateForm('mailingState', v)} placeholder="NY" /></div>
-                      <div className="sm:col-span-3"><Input label="ZIP" value={form.mailingZip} onChange={(v) => updateForm('mailingZip', v)} /></div>
+                      <div className="sm:col-span-12"><Input label={t('draft.mailingStreet')} value={form.mailingAddress} onChange={(v) => updateForm('mailingAddress', v)} placeholder={t('draft.mailingStreetPh')} /></div>
+                      <div className="sm:col-span-6"><Input label={t('draft.city')} value={form.mailingCity} onChange={(v) => updateForm('mailingCity', v)} /></div>
+                      <div className="sm:col-span-3"><Input label={t('draft.state')} value={form.mailingState} onChange={(v) => updateForm('mailingState', v)} placeholder="NY" /></div>
+                      <div className="sm:col-span-3"><Input label={t('draft.zip')} value={form.mailingZip} onChange={(v) => updateForm('mailingZip', v)} /></div>
                     </div>
                   )}
                 </Card>
 
-                <Card kicker="Tone">
-                  <p className="text-xs text-secondary mb-3">Adjusts wording in the §14 statement only.</p>
+                <Card kicker={t('draft.tone')}>
+                  <p className="text-xs text-secondary mb-3">{t('draft.toneHint')}</p>
                   <div className="flex flex-wrap gap-2">
-                    {(['neutral', 'assertive', 'conciliatory'] as Tone[]).map((t) => (
-                      <button key={t} type="button" onClick={() => updateForm('tone', t)} className={`rounded-full px-4 py-1.5 text-xs font-semibold border ${form.tone === t ? 'border-brass bg-brass text-[#1a1305]' : 'border-rule bg-bone text-secondary hover:border-rule-strong'}`}>
-                        {t}
+                    {(['neutral', 'assertive', 'conciliatory'] as Tone[]).map((tone) => (
+                      <button key={tone} type="button" onClick={() => updateForm('tone', tone)} className={`rounded-full px-4 py-1.5 text-xs font-semibold border ${form.tone === tone ? 'border-brass bg-brass text-white' : 'border-rule bg-bone text-secondary hover:border-rule-strong'}`}>
+                        {t(`draft.tone.${tone}` as MessageKey)}
                       </button>
                     ))}
                   </div>
                 </Card>
 
-                <Card kicker="Causes (RA-89 §13) — required">
+                <Card kicker={t('draft.causes')}>
                   <p className="text-xs text-secondary mb-3">
-                    A cause is the reason you are filing the RA-89 complaint. Check at least one option that matches why your rent or charges are wrong.
+                    {t('draft.causesHint')}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {CAUSE_OPTIONS.map((opt) => {
@@ -752,42 +785,94 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                       return (
                         <label key={opt.id} className={`flex items-start gap-2.5 rounded-[8px] border px-3 py-2 cursor-pointer ${active ? 'border-brass bg-brass-wash' : 'border-rule bg-bone hover:border-rule-strong'}`}>
                           <input type="checkbox" checked={active} onChange={() => toggleCause(opt.id)} className="mt-0.5 h-4 w-4 rounded border-rule-strong text-brass focus:ring-brass/25" />
-                          <span className={`text-sm font-medium ${active ? 'text-brass-deep' : 'text-ink-text'}`}>{opt.label}</span>
+                          <span className={`text-sm font-medium ${active ? 'text-brass-deep' : 'text-ink-text'}`}>{t(opt.labelKey)}</span>
                         </label>
                       );
                     })}
                   </div>
                 </Card>
 
+                {/* Shown only when the tenant checks the §13 security-deposit
+                    cause. Amount + date are then required (see requiredMissing)
+                    and fill RA-89 §15; the yes/no is optional. */}
+                {form.causes.includes('security_deposit') && (
+                  <Card kicker={t('draft.secDep')}>
+                    <p className="text-xs text-secondary mb-3">
+                      {t('draft.secDepHint')}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label className="block">
+                        <span className="eyebrow block">{t('draft.secDepPaid')}</span>
+                        <div className="relative mt-1.5">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted font-mono text-sm">$</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            value={form.securityDepositAmount}
+                            onChange={(e) => updateForm('securityDepositAmount', e.target.value)}
+                            placeholder="2,000.00"
+                            className={`pl-6 ${inputClass} font-mono`}
+                          />
+                        </div>
+                      </label>
+                      <label className="block">
+                        <span className="eyebrow block">{t('draft.secDepDate')}</span>
+                        <input
+                          type="date"
+                          value={form.securityDepositPaidOn}
+                          onChange={(e) => updateForm('securityDepositPaidOn', e.target.value)}
+                          className={`mt-1.5 ${inputClass}`}
+                        />
+                      </label>
+                    </div>
+                    <div className="mt-3">
+                      <Select
+                        label={t('draft.secDepVacated')}
+                        value={form.securityDepositUsedForRent === null ? '' : form.securityDepositUsedForRent ? 'yes' : 'no'}
+                        onChange={(v) => updateForm('securityDepositUsedForRent', v === '' ? null : v === 'yes')}
+                        options={[
+                          { v: '', l: t('common.selectOne') },
+                          { v: 'yes', l: t('common.yes') },
+                          { v: 'no', l: t('common.no') },
+                        ]}
+                      />
+                    </div>
+                  </Card>
+                )}
+
                 {/* Always rendered (not collapsible) — every field here is
                     required before Generate will run; see requiredMissing. */}
-                <Card kicker="Required (tenant type, SCRIE/DRIE, Section 8, electricity)">
+                <Card kicker={t('draft.required')}>
                   <p className="text-xs text-secondary mb-3">
-                    These affect which RA-89 boxes get checked — answer every one, even if the answer is &quot;No&quot;.
+                    {t('draft.requiredHint')}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <Select label="Tenant type *" value={form.tenantType} onChange={(v) => setForm((prev) => ({ ...prev, tenantType: v as TenantType, tenantTypeTouched: true }))} options={[
-                      { v: 'prime', l: 'Prime tenant' },
-                      { v: 'sub', l: 'Sub-tenant' },
-                      { v: 'roommate', l: 'Roommate' },
-                      { v: 'hotel', l: 'Hotel / SRO tenant' },
+                    <Select label={t('draft.tenantType')} value={form.tenantType ?? ''} onChange={(v) => updateForm('tenantType', (v || null) as TenantType | null)} options={[
+                      { v: '', l: t('common.selectOne') },
+                      { v: 'prime', l: t('draft.tenantType.prime') },
+                      { v: 'sub', l: t('draft.tenantType.sub') },
+                      { v: 'roommate', l: t('draft.tenantType.roommate') },
+                      { v: 'hotel', l: t('draft.tenantType.hotel') },
                     ]} />
-                    <Select label="Section 8 *" value={form.section8} onChange={(v) => setForm((prev) => ({ ...prev, section8: v as Section8Program, section8Touched: true }))} options={[
-                      { v: 'none', l: 'None' },
-                      { v: 'hud', l: 'HUD' },
-                      { v: 'nycha', l: 'NYCHA' },
-                      { v: 'hcv', l: 'Housing Choice Voucher' },
-                      { v: 'hpd', l: 'HPD' },
+                    <Select label={t('draft.section8')} value={form.section8 ?? ''} onChange={(v) => updateForm('section8', (v || null) as Section8Program | null)} options={[
+                      { v: '', l: t('common.selectOne') },
+                      { v: 'none', l: t('draft.section8.none') },
+                      { v: 'hud', l: t('draft.section8.hud') },
+                      { v: 'nycha', l: t('draft.section8.nycha') },
+                      { v: 'hcv', l: t('draft.section8.hcv') },
+                      { v: 'hpd', l: t('draft.section8.hpd') },
                     ]} />
-                    <Select label="Electricity in rent *" value={form.electricityIncluded === null ? '' : form.electricityIncluded ? 'yes' : 'no'} onChange={(v) => updateForm('electricityIncluded', v === '' ? null : v === 'yes')} options={[
-                      { v: '', l: '— select one —' },
-                      { v: 'yes', l: 'Yes, included' },
-                      { v: 'no', l: 'No, billed separately' },
+                    <Select label={t('draft.electricity')} value={form.electricityIncluded === null ? '' : form.electricityIncluded ? 'yes' : 'no'} onChange={(v) => updateForm('electricityIncluded', v === '' ? null : v === 'yes')} options={[
+                      { v: '', l: t('common.selectOne') },
+                      { v: 'yes', l: t('draft.electricity.yes') },
+                      { v: 'no', l: t('draft.electricity.no') },
                     ]} />
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                    <Toggle label="SCRIE / DRIE recipient *" value={form.scrieDrie} onChange={(v) => setForm((prev) => ({ ...prev, scrieDrie: v, scrieDrieTouched: true }))} />
-                    <Toggle label="Co-op apartment" value={form.coop} onChange={(v) => updateForm('coop', v)} />
+                    <Toggle label={t('draft.scrieDrie')} value={form.scrieDrie} onChange={(v) => setForm((prev) => ({ ...prev, scrieDrie: v, scrieDrieTouched: true }))} />
+                    <Toggle label={t('draft.coop')} value={form.coop} onChange={(v) => updateForm('coop', v)} />
                   </div>
                 </Card>
 
@@ -797,10 +882,10 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                     which case the rent goes in the form's "(b)" blank
                     instead of "(a)". */}
                 <div className="rounded-[10px] border border-rule bg-paper-soft px-3 py-3">
-                  <Toggle label="Initially moved in without written lease" value={form.noWrittenLease} onChange={(v) => updateForm('noWrittenLease', v)} />
+                  <Toggle label={t('draft.noLease')} value={form.noWrittenLease} onChange={(v) => updateForm('noWrittenLease', v)} />
                   {form.noWrittenLease && (
                     <div className="mt-2 max-w-[200px]">
-                      <span className="eyebrow block">Initial rent (no lease)</span>
+                      <span className="eyebrow block">{t('draft.noLeaseRent')}</span>
                       <div className="relative mt-1.5">
                         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted font-mono text-sm">$</span>
                         <input
@@ -822,17 +907,17 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                     fine answer on its own; the index # is only useful (and
                     only shown) once the tenant says Yes. */}
                 <div className="rounded-[10px] border border-rule bg-paper-soft px-3 py-3">
-                  <Toggle label="This complaint has been raised in court" value={form.raisedInCourt} onChange={(v) => updateForm('raisedInCourt', v)} />
+                  <Toggle label={t('draft.court')} value={form.raisedInCourt} onChange={(v) => updateForm('raisedInCourt', v)} />
                   {form.raisedInCourt && (
-                    <div className="mt-2"><Input label="Court Index No." value={form.courtIndexNo} onChange={(v) => updateForm('courtIndexNo', v)} placeholder="e.g. LT-12345-25" optional /></div>
+                    <div className="mt-2"><Input label={t('draft.courtIndex')} value={form.courtIndexNo} onChange={(v) => updateForm('courtIndexNo', v)} placeholder="LT-12345-25" optional optionalLabel={t('common.optional')} /></div>
                   )}
                 </div>
             </div>
 
             {missing.length > 0 && (
               <div className="mt-4 flex items-start gap-2 text-xs text-secondary">
-                <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-warning text-bone font-bold text-[10px] flex-shrink-0">i</span>
-                <span>Still missing: <span className="font-semibold text-ink-text">{missing.join(', ')}</span>. Packet will generate with blanks for you to write in by hand.</span>
+                <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-warning text-white font-bold text-[10px] flex-shrink-0">i</span>
+                <span>{t('draft.missingSoft', { items: missing.map((k) => t(k)).join(', ') })}</span>
               </div>
             )}
 
@@ -842,8 +927,8 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                 causes checklist or the "Required" details card above. */}
             {requiredMissing.length > 0 && (
               <div className="mt-3 flex items-start gap-2 text-xs">
-                <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-rust text-bone font-bold text-[10px] flex-shrink-0">!</span>
-                <span className="text-rust">Still required: <span className="font-semibold">{requiredMissing.join(', ')}</span>.</span>
+                <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-rust text-white font-bold text-[10px] flex-shrink-0">!</span>
+                <span className="text-rust">{t('draft.missingHard', { items: requiredMissing.map((k) => t(k)).join(', ') })}</span>
               </div>
             )}
 
@@ -852,7 +937,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                 type="button"
                 onClick={handleDraft}
                 disabled={isStreaming || requiredMissing.length > 0}
-                title={requiredMissing.length > 0 ? `Still required: ${requiredMissing.join(', ')}` : undefined}
+                title={requiredMissing.length > 0 ? t('draft.missingHard', { items: requiredMissing.map((k) => t(k)).join(', ') }) : undefined}
                 className="btn-brass px-6 py-3 text-sm flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isStreaming ? (
@@ -861,18 +946,18 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                       <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Drafting…
+                    {t('draft.drafting')}
                   </>
                 ) : (
                   <>
-                    Generate my filing packet
+                    {t('draft.generate')}
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 7h8m0 0L7 3m4 4L7 11" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </>
                 )}
               </button>
-              {isStreaming && <button type="button" onClick={handleStop} className="btn-ghost px-4 py-2.5 text-sm">Stop</button>}
+              {isStreaming && <button type="button" onClick={handleStop} className="btn-ghost px-4 py-2.5 text-sm">{t('draft.stop')}</button>}
               {provider && isStreaming && (
-                <span className="ml-auto text-[10px] font-mono text-muted uppercase tracking-wider">via {provider}</span>
+                <span className="ml-auto text-[10px] font-mono text-muted uppercase tracking-wider">{t('draft.via', { provider })}</span>
               )}
             </div>
 
@@ -901,30 +986,30 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
             <div className="mt-6 flex flex-wrap items-center gap-2 pb-4 border-b border-rule">
               <button type="button" onClick={handleRa89Download} disabled={ra89Filling} className="btn-brass px-4 py-2 text-sm flex items-center gap-1.5 disabled:opacity-60">
                 {ra89Filling ? <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" /> : <IconDownload />}
-                {ra89Filling ? 'Filling form…' : 'Download RA-89 (filled)'}
+                {ra89Filling ? t('draft.fillingForm') : t('draft.downloadRa89')}
               </button>
               <button type="button" onClick={handleDownload} className="btn-ghost px-4 py-2 text-sm flex items-center gap-1.5">
-                <IconDownload /> Companion doc
+                <IconDownload /> {t('draft.companionDoc')}
               </button>
               <button type="button" onClick={handleGmail} className="btn-ghost px-3 py-2 text-sm flex items-center gap-1.5">
-                <IconGmail /> Send via Gmail
+                <IconGmail /> {t('draft.sendGmail')}
               </button>
               <button type="button" onClick={handleMailto} className="btn-ghost px-3 py-2 text-sm flex items-center gap-1.5">
-                <IconMail /> Open in Mail
+                <IconMail /> {t('draft.openMail')}
               </button>
               <button type="button" onClick={handlePrint} className="btn-ghost px-3 py-2 text-sm flex items-center gap-1.5">
-                <IconPrint /> Print
+                <IconPrint /> {t('draft.print')}
               </button>
               <button type="button" onClick={handleCopy} className="btn-ghost px-3 py-2 text-sm flex items-center gap-1.5">
-                <IconCopy /> {copied ? 'Copied' : 'Copy text'}
+                <IconCopy /> {copied ? t('draft.copied') : t('draft.copyText')}
               </button>
               <div className="ml-auto flex items-center gap-3">
                 <span className="text-[10px] font-mono text-muted uppercase tracking-wider">
                   {generatedAt && generatedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                   {provider && ` · ${provider}`}
                 </span>
-                <button type="button" onClick={handleDraft} className="btn-ghost px-3 py-2 text-xs flex items-center gap-1.5" title="Generate again with current settings">
-                  ↻ Redraft
+                <button type="button" onClick={handleDraft} className="btn-ghost px-3 py-2 text-xs flex items-center gap-1.5">
+                  {t('draft.redraft')}
                 </button>
               </div>
             </div>
@@ -937,7 +1022,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
 
             {/* Email helper note */}
             <p className="mt-2 text-[11px] text-muted leading-relaxed">
-              Email opens a compose window with a pre-filled subject and message. Attach the downloaded PDF in your mail client.
+              {t('draft.emailNote')}
             </p>
 
             {/* PDF preview iframe — the document IS the artifact */}
@@ -945,7 +1030,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
               {pdfUrl ? (
                 <iframe
                   src={`${pdfUrl}#zoom=page-width&toolbar=0&navpanes=0`}
-                  title={`RA-89 Filing Packet for BBL ${verdict.bbl}`}
+                  title={t('draft.pdfTitle', { bbl: verdict.bbl })}
                   className="w-full rounded-[8px] bg-bone"
                   style={{ height: 'min(900px, calc(100vh - 100px))', minHeight: 600 }}
                 />
@@ -953,64 +1038,64 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                 <div className="h-[600px] flex items-center justify-center bg-bone rounded-[8px]">
                   <div className="text-center">
                     <div className="h-6 w-6 mx-auto mb-3 rounded-full border-2 border-brass border-t-transparent animate-spin" />
-                    <p className="text-sm text-muted">Rendering your PDF…</p>
+                    <p className="text-sm text-muted">{t('draft.renderingPdf')}</p>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Next steps — promoted to a hero panel */}
-            <div className="mt-6 rounded-[16px] border-2 border-brass bg-gradient-to-br from-brass-wash via-bone to-brass-wash/60 px-6 sm:px-8 py-6 shadow-[0_18px_40px_-18px_rgba(176,122,26,0.4)]">
+            {/* Next steps */}
+            <div className="mt-6 rounded-[16px] border border-brass/30 bg-brass-wash/50 px-6 sm:px-8 py-6">
               <div className="flex items-baseline justify-between gap-3 mb-1">
-                <span className="eyebrow text-brass-deep tracking-[0.22em]">What to do next</span>
-                <span className="font-display italic text-xs text-brass-deep">4 steps · ~10 min</span>
+                <span className="eyebrow text-brass-deep">{t('draft.next.kicker')}</span>
+                <span className="text-xs text-brass-deep">{t('draft.next.meta')}</span>
               </div>
-              <h3 className="font-display text-[26px] sm:text-[30px] leading-tight tracking-tight text-ink-text">
-                You&rsquo;re four steps from filing.
+              <h3 className="font-display text-[24px] sm:text-[28px] leading-tight tracking-tight text-ink-text">
+                {t('draft.next.title')}
               </h3>
               <div className="mt-2 h-[2px] w-12 bg-brass" />
 
               <ol className="mt-5 space-y-4">
                 <NextLine
                   n="1"
-                  title="Get the official RA-89 form"
+                  title={t('draft.next.1t')}
                   body={
                     <>
-                      The fillable PDF is on the DHCR site.{' '}
+                      {t('draft.next.1pre')}
                       <a href="https://hcr.ny.gov/form-ra-89" target="_blank" rel="noopener noreferrer" className="font-semibold text-brass-deep underline decoration-brass underline-offset-2 hover:text-brass">
-                        Download RA-89 ↗
+                        {t('draft.next.1link')}
                       </a>
                     </>
                   }
                 />
                 <NextLine
                   n="2"
-                  title="Transcribe values from your packet"
-                  body={<>Copy each <span className="font-mono text-brass-deep text-[12px]">§N</span> value from Section A into the matching box on RA-89. Paste the §14 paragraph from your packet verbatim into the form&rsquo;s Section 14.</>}
+                  title={t('draft.next.2t')}
+                  body={<>{t('draft.next.2b')}</>}
                 />
                 <NextLine
                   n="3"
-                  title="Sign and bundle evidence"
-                  body={<>Sign page 4 of RA-89. Behind the form, clip your packet PDF, copies of every lease, rent receipts, and cancelled checks.</>}
+                  title={t('draft.next.3t')}
+                  body={<>{t('draft.next.3b')}</>}
                 />
                 <NextLine
                   n="4"
-                  title="File"
+                  title={t('draft.next.4t')}
                   body={
                     <div className="space-y-2 mt-1">
                       <div className="flex items-start gap-2">
-                        <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-verdigris text-bone font-mono text-[10px] font-bold flex-shrink-0">A</span>
+                        <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-verdigris text-white font-mono text-[10px] font-bold flex-shrink-0">A</span>
                         <span>
-                          <span className="font-semibold text-ink-text">Online (fastest)</span> —{' '}
+                          <span className="font-semibold text-ink-text">{t('draft.next.4onlineLabel')}</span> —{' '}
                           <a href="https://rent.hcr.ny.gov/RentConnect/Tenant/RentOverchargeOverview" target="_blank" rel="noopener noreferrer" className="font-semibold text-brass-deep underline decoration-brass underline-offset-2 hover:text-brass">
-                            DHCR Rent Connect ↗
+                            {t('draft.next.4onlineLink')}
                           </a>
                         </span>
                       </div>
                       <div className="flex items-start gap-2">
-                        <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate text-bone font-mono text-[10px] font-bold flex-shrink-0">B</span>
+                        <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate text-white font-mono text-[10px] font-bold flex-shrink-0">B</span>
                         <span>
-                          <span className="font-semibold text-ink-text">By mail</span> — two copies, keep one:
+                          <span className="font-semibold text-ink-text">{t('draft.next.4mailLabel')}</span>{t('draft.next.4mailNote')}
                           <span className="block mt-1 font-mono text-[11px] text-secondary leading-relaxed pl-3 border-l-2 border-brass">
                             DHCR · Office of Rent Administration<br />
                             Gertz Plaza · 92-31 Union Hall Street, 6th Floor<br />
@@ -1025,12 +1110,12 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
 
               <div className="mt-6 rounded-[10px] border border-warning-bd bg-bone px-4 py-3">
                 <p className="text-[12px] leading-relaxed text-secondary">
-                  <span className="font-semibold text-warning">Pro tip · strongest evidence:</span>{' '}
-                  request your apartment&rsquo;s certified rent history first via{' '}
+                  <span className="font-semibold text-warning">{t('draft.next.tipLabel')}</span>
+                  {t('draft.next.tipPre')}
                   <a href="https://hcr.ny.gov/records-access" target="_blank" rel="noopener noreferrer" className="font-semibold text-brass-deep underline decoration-brass/60 underline-offset-2 hover:text-brass">
-                    DHCR Records Access (REC-1)
+                    {t('draft.next.tipLink')}
                   </a>
-                  . It anchors the legal rent and makes your complaint significantly harder to dismiss.
+                  {t('draft.next.tipPost')}
                 </p>
               </div>
             </div>
@@ -1039,7 +1124,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
             <details className="mt-4 group" open={showRaw} onToggle={(e) => setShowRaw((e.target as HTMLDetailsElement).open)}>
               <summary className="cursor-pointer text-[11px] text-muted hover:text-secondary inline-flex items-center gap-1.5 select-none">
                 <svg className="h-3 w-3 transition-transform group-open:rotate-90" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M5 3l3 3-3 3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                Edit the underlying text
+                {t('draft.editRaw')}
               </summary>
               <div className="mt-2 rounded-[10px] border border-rule bg-bone overflow-hidden">
                 <textarea
@@ -1051,14 +1136,12 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                   spellCheck={false}
                 />
               </div>
-              <p className="mt-1 text-[10px] text-muted">Edits regenerate the PDF preview above as you type.</p>
+              <p className="mt-1 text-[10px] text-muted">{t('draft.editRawHint')}</p>
             </details>
 
             <div className="mt-4 rounded-[10px] border border-warning-bd bg-warning-bg/70 px-3 py-2">
               <p className="text-[11px] text-warning leading-relaxed">
-                <span className="font-semibold">Not legal advice.</span> Review every line before filing and consider speaking with a tenant attorney.
-                This is not a law firm and use of this tool does not create an attorney-client
-                relationship. Not affiliated with or endorsed by DHCR or any NY state agency.
+                <span className="font-semibold">{t('draft.notLegalAdvice')}</span> {t('draft.disclaimer')}
               </p>
             </div>
           </>
@@ -1098,12 +1181,12 @@ function Card({ kicker, className = '', children }: { kicker: string; className?
   );
 }
 
-function Input({ label, value, onChange, placeholder, optional }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; optional?: boolean }) {
+function Input({ label, value, onChange, placeholder, optional, optionalLabel }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; optional?: boolean; optionalLabel?: string }) {
   return (
     <label className="block">
       <span className="eyebrow block">
         {label}
-        {optional && <span className="text-muted normal-case tracking-normal text-[10px] font-normal ml-1">(optional)</span>}
+        {optional && <span className="text-muted normal-case tracking-normal text-[10px] font-normal ml-1">{optionalLabel ?? '(optional)'}</span>}
       </span>
       <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`mt-1.5 ${inputClass}`} />
     </label>

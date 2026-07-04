@@ -1,46 +1,46 @@
 'use client';
 
 import type { Verdict } from '@/lib/stabilization';
+import { useI18n } from '@/lib/i18n';
+import type { MessageKey } from '@/lib/i18n/messages/en';
 
 type Props = {
   verdict: Verdict;
   address: string;
 };
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<
+  Verdict['status'],
+  { accent: string; pillBg: string; pillText: string; badge: MessageKey; headline: MessageKey; sub: MessageKey }
+> = {
   likely_stabilized: {
     accent: 'text-verdigris',
-    accentBg: 'bg-verdigris-bg',
-    accentBd: 'border-verdigris-bd',
     pillBg: 'bg-verdigris',
-    pillText: 'text-bone',
-    badge: 'Likely stabilized',
-    headline: 'This building likely has rent-stabilized units.',
-    sub: 'Evidence found in the NYCDB rentstab dataset and / or the DHCR list.',
+    pillText: 'text-white',
+    badge: 'result.stabilized.badge',
+    headline: 'result.stabilized.headline',
+    sub: 'result.stabilized.sub',
   },
   not_listed: {
     accent: 'text-warning',
-    accentBg: 'bg-warning-bg',
-    accentBd: 'border-warning-bd',
     pillBg: 'bg-warning',
-    pillText: 'text-bone',
-    badge: 'Not listed',
-    headline: 'No stabilization record found for this building.',
-    sub: 'DHCR records lag by 1–2 years and some stabilized buildings (recent 421-a / J-51) may not appear. Cross-check with DHCR before concluding.',
+    pillText: 'text-white',
+    badge: 'result.notListed.badge',
+    headline: 'result.notListed.headline',
+    sub: 'result.notListed.sub',
   },
   unknown: {
     accent: 'text-warning',
-    accentBg: 'bg-warning-bg',
-    accentBd: 'border-warning-bd',
     pillBg: 'bg-warning',
-    pillText: 'text-bone',
-    badge: 'Likely not stabilized',
-    headline: 'This building is probably not rent-stabilized.',
-    sub: 'We didn’t find your address on the DHCR list or in the NYCDB rent-stabilization dataset. Buildings outside these records are usually condos, co-ops, single/two-family homes, or post-1974 construction — none of which are typically rent-stabilized. To be 100% sure, verify directly with DHCR.',
+    pillText: 'text-white',
+    badge: 'result.unknown.badge',
+    headline: 'result.unknown.headline',
+    sub: 'result.unknown.sub',
   },
-} as const;
+};
 
 export default function ResultCard({ verdict, address }: Props) {
+  const { t } = useI18n();
   const config = STATUS_CONFIG[verdict.status];
   const [primaryAddr, ...rest] = address.split(',');
   const tail = rest.join(',').trim();
@@ -53,16 +53,14 @@ export default function ResultCard({ verdict, address }: Props) {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="eyebrow">Verdict · Section II</span>
+              <span className="eyebrow">{t('result.eyebrow')}</span>
               <span className="h-px w-8 bg-rule" />
               <span className="text-[11px] text-muted font-mono">BBL {verdict.bbl}</span>
             </div>
-            <h2 className="mt-2 font-display text-[28px] sm:text-[32px] leading-[1.05] tracking-tight text-ink-text">
-              <span className={`block first-letter:font-display first-letter:text-[42px] first-letter:font-bold first-letter:float-left first-letter:mr-2 first-letter:leading-[0.85] first-letter:${config.accent}`}>
-                {config.headline}
-              </span>
+            <h2 className="mt-2 font-display text-[26px] sm:text-[30px] leading-[1.15] tracking-tight text-ink-text">
+              {t(config.headline)}
             </h2>
-            <p className="mt-2 text-sm text-secondary max-w-xl">{config.sub}</p>
+            <p className="mt-2 text-sm text-secondary max-w-xl">{t(config.sub)}</p>
             <p className="mt-3 font-display italic text-sm text-secondary">
               <span className="text-ink-text font-medium not-italic">{primaryAddr}</span>
               {tail && <span className="text-muted">, {tail}</span>}
@@ -72,7 +70,7 @@ export default function ResultCard({ verdict, address }: Props) {
             className={`flex-shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${config.pillBg} ${config.pillText}`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            {config.badge}
+            {t(config.badge)}
           </span>
         </div>
 
@@ -81,12 +79,12 @@ export default function ResultCard({ verdict, address }: Props) {
             <div className="my-5 rule" />
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
               <DataPoint
-                label="On DHCR list"
-                value={verdict.on_dhcr_list_latest ? 'Yes' : 'No'}
+                label={t('result.onDhcrList')}
+                value={verdict.on_dhcr_list_latest ? t('common.yes') : t('common.no')}
                 tone={verdict.on_dhcr_list_latest ? 'verdigris' : 'muted'}
               />
               {verdict.source_year_max !== undefined && (
-                <DataPoint label="Most recent evidence" value={String(verdict.source_year_max)} />
+                <DataPoint label={t('result.recentEvidence')} value={String(verdict.source_year_max)} />
               )}
             </dl>
           </>
@@ -99,7 +97,7 @@ export default function ResultCard({ verdict, address }: Props) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-[10px] border border-rule bg-bone px-3 py-2 text-sm font-medium text-ink-text hover:border-brass hover:bg-brass-wash hover:text-brass-deep"
           >
-            Verify on DHCR
+            {t('result.verifyDhcr')}
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M3 9l6-6M5 3h4v4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -110,7 +108,7 @@ export default function ResultCard({ verdict, address }: Props) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-[10px] border border-rule bg-bone px-3 py-2 text-sm font-medium text-ink-text hover:border-brass hover:bg-brass-wash hover:text-brass-deep"
           >
-            Request rent history (REC-1)
+            {t('result.requestRec1')}
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6">
               <path d="M3 9l6-6M5 3h4v4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -118,7 +116,7 @@ export default function ResultCard({ verdict, address }: Props) {
         </div>
 
         <p className="mt-5 text-[11px] leading-relaxed text-muted">
-          Informational only — NYCDB rentstab coverage runs through ~2023. Always verify your apartment’s status directly with DHCR.
+          {t('result.disclaimer')}
         </p>
       </div>
     </section>

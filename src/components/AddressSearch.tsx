@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { autocomplete, type GeoResult } from '@/lib/geosearch';
+import { useI18n } from '@/lib/i18n';
 
 type Props = {
   onSelect: (result: GeoResult) => void;
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export default function AddressSearch({ onSelect, disabled, variant = 'default', initialValue }: Props) {
+  const { t } = useI18n();
   const [inputValue, setInputValue] = useState(initialValue ?? '');
   const [results, setResults] = useState<GeoResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -110,7 +112,7 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
-            <span className="eyebrow hidden sm:inline">Address</span>
+            <span className="eyebrow hidden sm:inline">{t('search.label')}</span>
           </span>
           <input
             type="text"
@@ -122,7 +124,7 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={isHero ? 'e.g. 350 West 50th Street' : 'Enter a NYC address…'}
+            placeholder={isHero ? t('search.placeholderHero') : t('search.placeholder')}
             disabled={disabled}
             className={`flex-1 bg-transparent px-4 ${
               isHero ? 'py-4 text-lg font-display' : 'py-3 text-base'

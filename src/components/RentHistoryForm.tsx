@@ -3,13 +3,18 @@
 import { useState } from 'react';
 import DatePicker from 'react-datepicker';
 import type { LeaseEntry } from '@/lib/overcharge';
+import { useI18n } from '@/lib/i18n';
+
+// 'other' means the tenant enters their own end date (no autofill) and we
+// infer the RGB rate (1- vs 2-year) from the actual lease length at submit.
+type TermChoice = 12 | 24 | 'other';
 
 type LeaseRow = {
   startDate: Date | null;
   endDate: Date | null;
   endDateManual: boolean;
   monthlyRent: string;
-  leaseTermMonths: 12 | 24;
+  leaseTermMonths: TermChoice;
   vacancyLease?: boolean;
 };
 
@@ -23,7 +28,7 @@ const EMPTY_ROW: LeaseRow = {
   endDate: null,
   endDateManual: false,
   monthlyRent: '',
-  leaseTermMonths: 12,
+  leaseTermMonths: 'other',
   vacancyLease: false,
 };
 
@@ -38,6 +43,14 @@ function addMonths(d: Date, months: number): Date {
   const out = new Date(d);
   out.setMonth(out.getMonth() + months);
   return out;
+}
+
+// For an 'other'-term lease the tenant typed their own dates, so we infer
+// whether the RGB 1-year or 2-year rate applies from the actual span:
+// ~18+ months reads as a 2-year lease, anything shorter as 1-year.
+function inferTerm(start: Date, end: Date): 12 | 24 {
+  const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  return months >= 18 ? 24 : 12;
 }
 
 function isCompleteRow(row: LeaseRow): boolean {
@@ -55,6 +68,7 @@ const inputBase =
 const datePickerClass = `${inputBase} cursor-pointer`;
 
 export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
+  const { t } = useI18n();
   const [rows, setRows] = useState<LeaseRow[]>([{ ...EMPTY_ROW }]);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,8 +76,14 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
     setRows((prev) => prev.map((r, idx) => {
       if (idx !== i) return r;
       const next = { ...r, ...patch };
-      // Auto-fill end date when start or term changes, unless user set it manually
-      if (!next.endDateManual && next.startDate && ('startDate' in patch || 'leaseTermMonths' in patch)) {
+      // Auto-fill end date when start or term changes, unless the user set
+      // it manually or chose 'other' (which means "I'll enter my own dates").
+      if (
+        !next.endDateManual &&
+        next.startDate &&
+        typeof next.leaseTermMonths === 'number' &&
+        ('startDate' in patch || 'leaseTermMonths' in patch)
+      ) {
         next.endDate = addMonths(next.startDate, next.leaseTermMonths);
       }
       return next;
@@ -85,13 +105,13 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
     const completeRows = rows.filter(isCompleteRow);
 
     if (completeRows.length === 0) {
-      setError('Add at least one lease (start, rent, term).');
+      setError(t('form.err.atLeastOne'));
       return;
     }
 
     for (const r of completeRows) {
       if (r.startDate! >= r.endDate!) {
-        setError(`Lease starting ${toISO(r.startDate!)} must end after it starts.`);
+        setError(t('form.err.endAfterStart', { date: toISO(r.startDate!) }));
         return;
       }
     }
@@ -100,7 +120,10 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
       startDate: toISO(r.startDate!),
       endDate: toISO(r.endDate!),
       monthlyRent: Number.parseFloat(r.monthlyRent),
-      leaseTermMonths: r.leaseTermMonths,
+      leaseTermMonths:
+        r.leaseTermMonths === 'other'
+          ? inferTerm(r.startDate!, r.endDate!)
+          : r.leaseTermMonths,
       vacancyLease: r.vacancyLease ?? false,
     }));
 
@@ -119,13 +142,12 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
       className="paper px-6 sm:px-8 pt-6 pb-7 animate-fade-in-up space-y-6 relative"
     >
       <div>
-        <span className="eyebrow">Section III · Lease history</span>
+        <span className="eyebrow">{t('form.eyebrow')}</span>
         <h3 className="mt-1.5 font-display text-2xl tracking-tight text-ink-text">
-          Compare each renewal against the legal RGB increase.
+          {t('form.title')}
         </h3>
         <p className="mt-1.5 text-sm text-secondary max-w-xl">
-          Enter every lease you’ve signed at this apartment. We’ll walk it forward year-by-year against
-          NYC Rent Guidelines Board orders and surface any year where rent rose above the legal cap.
+          {t('form.sub')}
         </p>
       </div>
 
@@ -133,10 +155,10 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
 
       <div className="space-y-3">
         <div className="hidden sm:grid grid-cols-12 gap-2 px-1 eyebrow">
-          <span className="col-span-3">Lease start</span>
-          <span className="col-span-3">Lease end (auto-filled)</span>
-          <span className="col-span-3">Monthly rent</span>
-          <span className="col-span-2">Term</span>
+          <span className="col-span-3">{t('form.col.start')}</span>
+          <span className="col-span-3">{t('form.col.end')}</span>
+          <span className="col-span-3">{t('form.col.rent')}</span>
+          <span className="col-span-2">{t('form.col.term')}</span>
           <span className="col-span-1" />
         </div>
         {rows.map((row, i) => (
@@ -149,7 +171,7 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 selected={row.startDate}
                 onChange={(date: Date | null) => updateRow(i, { startDate: date })}
                 dateFormat="MM/dd/yyyy"
-                placeholderText="Start date"
+                placeholderText={t('form.ph.start')}
                 showMonthDropdown
                 showYearDropdown
                 dropdownMode="select"
@@ -165,7 +187,7 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
                 selected={row.endDate}
                 onChange={(date: Date | null) => updateRow(i, { endDate: date, endDateManual: true })}
                 dateFormat="MM/dd/yyyy"
-                placeholderText="End date (auto-filled)"
+                placeholderText={t('form.ph.end')}
                 showMonthDropdown
                 showYearDropdown
                 dropdownMode="select"
@@ -192,19 +214,23 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
             </div>
             <select
               value={row.leaseTermMonths}
-              onChange={(e) => updateRow(i, { leaseTermMonths: Number(e.target.value) as 12 | 24 })}
+              onChange={(e) => {
+                const v = e.target.value;
+                updateRow(i, { leaseTermMonths: v === 'other' ? 'other' : (Number(v) as 12 | 24) });
+              }}
               className={`col-span-3 sm:col-span-2 ${inputBase}`}
             >
-              <option value={12}>1-year</option>
-              <option value={24}>2-year</option>
+              <option value="other">{t('form.term.other')}</option>
+              <option value={12}>{t('form.term.1yr')}</option>
+              <option value={24}>{t('form.term.2yr')}</option>
             </select>
             <button
               type="button"
               onClick={() => removeRow(i)}
               disabled={rows.length === 1}
               className="col-span-2 sm:col-span-1 h-[42px] rounded-[10px] border border-rule text-secondary hover:bg-rust-bg hover:text-rust hover:border-rust-bd disabled:cursor-not-allowed disabled:opacity-30"
-              aria-label="Remove lease"
-              title="Remove"
+              aria-label={t('form.removeLease')}
+              title={t('form.removeLease')}
             >
               <svg className="mx-auto h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M3 5h10M6 5V3.5A.5.5 0 0 1 6.5 3h3a.5.5 0 0 1 .5.5V5M5 5l.7 8.5a.5.5 0 0 0 .5.5h3.6a.5.5 0 0 0 .5-.5L11 5" strokeLinecap="round" />
@@ -218,7 +244,7 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
             onClick={addRow}
             className="inline-flex items-center gap-1 text-sm font-semibold text-brass-deep hover:text-brass"
           >
-            <span className="text-base leading-none">+</span> Add another lease
+            <span className="text-base leading-none">+</span> {t('form.addLease')}
           </button>
         </div>
       </div>
@@ -240,11 +266,11 @@ export default function RentHistoryForm({ isSubmitting, onSubmit }: Props) {
               <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Calculating…
+            {t('form.calculating')}
           </>
         ) : (
           <>
-            Estimate overcharge
+            {t('form.submit')}
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 7h8m0 0L7 3m4 4L7 11" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

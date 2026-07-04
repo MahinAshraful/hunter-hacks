@@ -1,4 +1,7 @@
+'use client';
+
 import type { Estimate } from '@/lib/overcharge';
+import { useI18n } from '@/lib/i18n';
 
 type Props = {
   estimate: Estimate;
@@ -26,6 +29,7 @@ function minIso(a: string, b: string): string {
 }
 
 export default function OverchargeSummary({ estimate }: Props) {
+  const { t } = useI18n();
   const hasOvercharge = estimate.overcharge_total_within_limit > 0;
   const today = new Date().toISOString().slice(0, 10);
   const currentOverchargeTotal = estimate.years_analyzed.reduce((acc, year) => {
@@ -46,47 +50,51 @@ export default function OverchargeSummary({ estimate }: Props) {
       <div className="px-6 sm:px-8 pt-6 pb-7">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <span className="eyebrow">Section III · Estimate</span>
+            <span className="eyebrow">{t('summary.eyebrow')}</span>
             <h2 className="mt-1.5 font-display text-[28px] sm:text-[32px] leading-[1.05] tracking-tight text-ink-text">
               {hasOvercharge ? (
                 <>
-                  <span className="block text-secondary text-base font-sans tracking-normal mb-1">
-                    You’ve been overcharged {fmt(currentOverchargeTotal)} as of today. If this remains unchecked, the first rent hike that becomes actionable starts with the lease beginning on {firstOverchargeLeaseStart ?? 'the first overcharged renewal'}, and you are set to be overcharged {fmt(estimate.overcharge_total_within_limit)} by the end of your final lease.
+                  <span className="block text-secondary text-base font-sans font-normal tracking-normal mb-1">
+                    {t('summary.overchargedLead', {
+                      current: fmt(currentOverchargeTotal),
+                      date: firstOverchargeLeaseStart ?? t('summary.firstOverchargeFallback'),
+                      total: fmt(estimate.overcharge_total_within_limit),
+                    })}
                   </span>
                   <span className="text-rust tabular">{fmt(estimate.overcharge_total_within_limit)}</span>
                 </>
               ) : (
                 <>
-                  <span className="block text-secondary text-base font-sans tracking-normal mb-1">
-                    No overcharge detected
+                  <span className="block text-secondary text-base font-sans font-normal tracking-normal mb-1">
+                    {t('summary.noneLead')}
                   </span>
-                  <span className="text-verdigris">All within RGB increase limits.</span>
+                  <span className="text-verdigris">{t('summary.withinLimits')}</span>
                 </>
               )}
             </h2>
           </div>
           <span className={`flex-shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${pillBg} ${pillText}`}>
             <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            {hasOvercharge ? 'Overcharge' : 'Within bounds'}
+            {hasOvercharge ? t('summary.badge.over') : t('summary.badge.within')}
           </span>
         </div>
 
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-px bg-rule rounded-[10px] overflow-hidden border border-rule">
           <Stat
-            label="Your current rent"
+            label={t('summary.stat.current')}
             value={fmtCents(estimate.actual_rent_monthly)}
-            unit="/mo"
+            unit={t('summary.perMonth')}
           />
           <Stat
-            label="Estimated legal rent"
+            label={t('summary.stat.legal')}
             value={fmtCents(estimate.legal_rent_monthly)}
-            unit="/mo"
+            unit={t('summary.perMonth')}
             tone="brass"
           />
           <Stat
-            label="Monthly overcharge"
+            label={t('summary.stat.monthly')}
             value={fmtCents(estimate.overcharge_monthly)}
-            unit="/mo"
+            unit={t('summary.perMonth')}
             tone={hasOvercharge ? 'rust' : 'muted'}
           />
         </div>
@@ -94,21 +102,21 @@ export default function OverchargeSummary({ estimate }: Props) {
         {estimate.years_analyzed.length > 0 && (
           <div className="mt-6">
             <div className="flex items-center gap-2 mb-2">
-              <span className="eyebrow">Per-renewal breakdown</span>
+              <span className="eyebrow">{t('summary.breakdown')}</span>
               <span className="h-px flex-1 bg-rule" />
             </div>
             <div className="overflow-x-auto rounded-[10px] border border-rule bg-paper-soft">
               <table className="w-full border-collapse text-sm tabular">
                 <thead>
                   <tr className="text-left">
-                    <Th>Lease start</Th>
-                    <Th>Term</Th>
-                    <Th align="right">Allowed</Th>
-                    <Th align="right">Actual</Th>
-                    <Th align="right">Legal rent</Th>
-                    <Th align="right">Actual rent</Th>
-                    <Th align="right">Overcharge / mo</Th>
-                    <Th align="right">In 6-yr window</Th>
+                    <Th>{t('summary.th.leaseStart')}</Th>
+                    <Th>{t('summary.th.term')}</Th>
+                    <Th align="right">{t('summary.th.allowed')}</Th>
+                    <Th align="right">{t('summary.th.actual')}</Th>
+                    <Th align="right">{t('summary.th.legalRent')}</Th>
+                    <Th align="right">{t('summary.th.actualRent')}</Th>
+                    <Th align="right">{t('summary.th.overMo')}</Th>
+                    <Th align="right">{t('summary.th.inWindow')}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -121,7 +129,7 @@ export default function OverchargeSummary({ estimate }: Props) {
                         className={`border-t border-rule/70 ${idx % 2 === 0 ? 'bg-bone/40' : ''}`}
                       >
                         <Td>{y.lease_start}</Td>
-                        <Td>{y.term_months === 24 ? '2-yr' : '1-yr'}</Td>
+                        <Td>{y.term_months === 24 ? t('summary.term2') : t('summary.term1')}</Td>
                         <Td align="right">{fmtPct(y.allowed_pct)}</Td>
                         <Td align="right" className={
                           y.actual_pct !== null && y.allowed_pct !== null && y.actual_pct > y.allowed_pct
@@ -147,9 +155,9 @@ export default function OverchargeSummary({ estimate }: Props) {
         {estimate.caveats.length > 0 && (
           <details className="mt-5 group">
             <summary className="cursor-pointer flex items-center gap-2 text-xs">
-              <span className="eyebrow">Caveats and assumptions</span>
+              <span className="eyebrow">{t('summary.caveats')}</span>
               <span className="h-px flex-1 bg-rule" />
-              <span className="text-muted text-[10px]">{estimate.caveats.length} notes</span>
+              <span className="text-muted text-[10px]">{t('summary.notes', { n: estimate.caveats.length })}</span>
               <svg className="h-3 w-3 text-muted transition-transform group-open:rotate-180" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M3 5l3 3 3-3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -166,18 +174,16 @@ export default function OverchargeSummary({ estimate }: Props) {
         )}
 
         <p className="mt-5 text-[11px] leading-relaxed text-muted">
-          Estimate only — not legal advice. To confirm the starting legal rent, request your
-          apartment’s rent history via{' '}
+          {t('summary.disclaimerPre')}
           <a
             href="https://hcr.ny.gov/records-access"
             target="_blank"
             rel="noopener noreferrer"
             className="underline decoration-brass/40 underline-offset-2 hover:text-brass-deep hover:decoration-brass"
           >
-            DHCR Records Access (Form REC-1)
+            {t('summary.disclaimerLink')}
           </a>
-          . This is not a law firm and use of this tool does not create an attorney-client
-          relationship. Not affiliated with or endorsed by DHCR or any NY state agency.
+          {t('summary.disclaimerPost')}
         </p>
       </div>
     </section>

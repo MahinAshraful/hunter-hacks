@@ -10,6 +10,8 @@ import {
 } from 'react';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useI18n } from '@/lib/i18n';
 
 /* ============================================================================
    /info — an editorial, scrollytelling explanation of NYC rent stabilization.
@@ -647,6 +649,7 @@ function OneInFourCallout() {
    ============================================================================ */
 
 export default function InfoStory() {
+  const { t, locale } = useI18n();
   const reading = useReadingProgress();
 
   // Section 1 — scale (3 beats)
@@ -667,21 +670,34 @@ export default function InfoStory() {
       <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/85 border-b border-rule/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           <Link href="/" className="group flex items-baseline -ml-0.5 pr-1">
-            <span className="font-display italic text-[18px] sm:text-[22px] font-medium tracking-tight text-ink-text group-hover:text-brass-deep transition-colors whitespace-nowrap pr-0.5">
-              Am I Rent Stabilized?
+            <span className="font-display text-[17px] sm:text-[20px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep transition-colors whitespace-nowrap pr-0.5">
+              {t('app.title')}
             </span>
           </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-secondary hover:bg-paper-soft hover:text-ink-text transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M7.5 2.5L4 6l3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Home
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-secondary hover:bg-paper-soft hover:text-ink-text transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M7.5 2.5L4 6l3.5 3.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('nav.home')}
+            </Link>
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
+
+      {/* The long-form story below is English-only for now — flag that for
+          readers browsing in another language. */}
+      {locale !== 'en' && (
+        <div className="border-b border-rule bg-brass-wash/60">
+          <p className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2 text-xs text-secondary">
+            {t('story.englishOnly')}
+          </p>
+        </div>
+      )}
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative overflow-hidden border-b border-rule">

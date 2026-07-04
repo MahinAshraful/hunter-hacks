@@ -10,7 +10,9 @@ import RentHistoryForm from '@/components/RentHistoryForm';
 import OverchargeSummary from '@/components/OverchargeSummary';
 import ComplaintPreview from '@/components/ComplaintPreview';
 import Footer from '@/components/Footer';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import StageStepper, { type Stage } from '@/components/StageStepper';
+import { useI18n } from '@/lib/i18n';
 import type { GeoResult } from '@/lib/geosearch';
 import type { Verdict } from '@/lib/stabilization';
 import type { Estimate, LeaseEntry } from '@/lib/overcharge';
@@ -21,6 +23,7 @@ type LookupResponse = Verdict & { lookupId?: number };
 type MapStatus = 'idle' | 'flying' | 'arrived';
 
 export default function Home() {
+  const { t } = useI18n();
   const [selectedResult, setSelectedResult] = useState<GeoResult | null>(null);
   const [lookup, setLookup] = useState<LookupResponse | null>(null);
   const [isLooking, setIsLooking] = useState(false);
@@ -117,7 +120,7 @@ export default function Home() {
       setLookup(data);
     } catch (err) {
       console.error('Lookup failed:', err);
-      setLookupError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setLookupError(err instanceof Error ? err.message : t('error.generic'));
     } finally {
       setIsLooking(false);
     }
@@ -143,7 +146,7 @@ export default function Home() {
     } catch (err) {
       console.error('Estimate failed:', err);
       setEstimateError(
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+        err instanceof Error ? err.message : t('error.generic'),
       );
     } finally {
       setIsEstimating(false);
@@ -189,34 +192,35 @@ export default function Home() {
             type="button"
             onClick={handleReset}
             className="group flex items-baseline -ml-0.5 pr-1"
-            aria-label="Home"
+            aria-label={t('nav.home')}
           >
-            <span className="font-display italic text-[18px] sm:text-[22px] font-medium tracking-tight text-ink-text group-hover:text-brass-deep transition-colors whitespace-nowrap pr-0.5">
-              Am I Rent Stabilized?
+            <span className="font-display text-[17px] sm:text-[20px] font-semibold tracking-tight text-ink-text group-hover:text-brass-deep transition-colors whitespace-nowrap pr-0.5">
+              {t('app.title')}
             </span>
           </button>
 
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-2">
             <Link
               href="/info"
               className="rounded-md px-3 py-1.5 text-sm font-medium text-secondary hover:bg-paper-soft hover:text-ink-text transition-colors"
             >
-              Info
+              {t('nav.info')}
             </Link>
             {(visibleLookup || estimate || selectedResult) && (
               <button
                 type="button"
                 onClick={handleReset}
-                className="ml-1 inline-flex items-center gap-1.5 rounded-full border border-rule-strong/70 bg-bone px-3.5 py-1.5 text-xs font-semibold text-secondary hover:border-brass hover:bg-brass-wash hover:text-brass-deep transition-all"
-                title="Start over with a new address"
+                className="inline-flex items-center gap-1.5 rounded-full border border-rule-strong/70 bg-bone px-3.5 py-1.5 text-xs font-semibold text-secondary hover:border-brass hover:bg-brass-wash hover:text-brass-deep transition-all"
+                title={t('nav.resetTitle')}
               >
                 <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="M2 6a4 4 0 1 1 1.2 2.85" strokeLinecap="round" />
                   <path d="M2 3v3h3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Reset
+                {t('nav.reset')}
               </button>
             )}
+            <LanguageSwitcher />
           </nav>
         </div>
       </header>
@@ -227,25 +231,25 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* MAP */}
             <div className="lg:col-span-7 order-1 lg:order-1">
-              <div className="relative h-[52vh] min-h-[360px] lg:h-[68vh] lg:min-h-[440px] lg:sticky lg:top-20 rounded-[16px] overflow-hidden border border-ink-line bg-ink shadow-[0_30px_60px_-30px_rgba(12,15,23,0.55)] animate-scale-in">
+              <div className="relative h-[52vh] min-h-[360px] lg:h-[68vh] lg:min-h-[440px] lg:sticky lg:top-20 rounded-[16px] overflow-hidden border border-rule bg-paper-deep shadow-[0_16px_40px_-24px_rgba(16,24,40,0.3)] animate-scale-in">
                 <CityMap3D target={target} onStatusChange={setMapStatus} />
 
                 {/* Top-left: BBL/coords readout */}
                 <div className="pointer-events-none absolute top-3 left-3 ink-card px-3 py-2 max-w-[70%]">
-                  <div className="eyebrow text-brass-glow/80">
-                    {!target ? 'New York City' : mapStatus === 'flying' ? 'Approaching' : 'Building located'}
+                  <div className="eyebrow text-brass-deep/90">
+                    {!target ? t('map.nyc') : mapStatus === 'flying' ? t('map.approaching') : t('map.located')}
                   </div>
                   {target ? (
                     <div className="mt-0.5 font-display text-sm leading-tight truncate" title={target.address}>
                       {target.address.split(',')[0]}
                     </div>
                   ) : (
-                    <div className="mt-0.5 font-display text-sm">5 boroughs · ~1M stabilized units</div>
+                    <div className="mt-0.5 font-display text-sm">{t('map.boroughs')}</div>
                   )}
-                  <div className="mt-1 font-mono text-[10px] opacity-70">
+                  <div className="mt-1 font-mono text-[10px] text-muted">
                     {target
                       ? `${target.lat.toFixed(4)}°N  ${Math.abs(target.lng).toFixed(4)}°W  ·  BBL ${target.bbl}`
-                      : 'Globe view · idle'}
+                      : t('map.idleReadout')}
                   </div>
                 </div>
 
@@ -260,17 +264,17 @@ export default function Home() {
                         mapStatus === 'arrived' ? 'bg-verdigris-bd' : mapStatus === 'flying' ? 'bg-brass' : 'bg-rule-strong/60'
                       }`} />
                     </span>
-                    <span className="font-mono uppercase tracking-wider opacity-90">
-                      {mapStatus === 'flying' ? 'flying' : mapStatus === 'arrived' ? 'arrived' : 'standby'}
+                    <span className="font-mono uppercase tracking-wider text-secondary">
+                      {mapStatus === 'flying' ? t('map.flying') : mapStatus === 'arrived' ? t('map.arrived') : t('map.standby')}
                     </span>
                   </span>
                   {mapStatus === 'arrived' && visibleLookup && (
                     <button
                       type="button"
                       onClick={() => verdictRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                      className="lg:hidden ink-card pointer-events-auto px-3 py-1.5 text-[11px] font-medium text-brass-glow border-brass/40 hover:bg-brass/15 transition-colors"
+                      className="lg:hidden ink-card pointer-events-auto px-3 py-1.5 text-[11px] font-medium text-brass-deep border-brass/40 hover:bg-brass-wash transition-colors"
                     >
-                      View verdict ↓
+                      {t('map.viewVerdict')}
                     </button>
                   )}
                 </div>
@@ -278,18 +282,15 @@ export default function Home() {
                 {/* Initial overlay legend (only when nothing selected) */}
                 {!target && (
                   <div className="pointer-events-none absolute inset-x-3 bottom-3 sm:right-3 sm:left-auto sm:bottom-3 sm:max-w-[300px] ink-card p-4 animate-fade-in">
-                    <div className="eyebrow text-brass-glow/80">How this works</div>
+                    <div className="eyebrow text-brass-deep/90">{t('map.howTitle')}</div>
                     <ol className="mt-2 space-y-1.5 text-[12px] leading-snug">
-                      <li className="flex gap-2"><span className="text-brass-glow font-mono">01</span><span>Search any NYC address — we’ll fly there.</span></li>
-                      <li className="flex gap-2"><span className="text-brass-glow font-mono">02</span><span>The building is checked against DHCR + NYCDB.</span></li>
-                      <li className="flex gap-2"><span className="text-brass-glow font-mono">03</span><span>Add your lease history to estimate overcharge.</span></li>
-                      <li className="flex gap-2"><span className="text-brass-glow font-mono">04</span><span>Draft a DHCR Form RA-89 complaint in plain English.</span></li>
+                      <li className="flex gap-2"><span className="text-brass font-mono">01</span><span>{t('map.how1')}</span></li>
+                      <li className="flex gap-2"><span className="text-brass font-mono">02</span><span>{t('map.how2')}</span></li>
+                      <li className="flex gap-2"><span className="text-brass font-mono">03</span><span>{t('map.how3')}</span></li>
+                      <li className="flex gap-2"><span className="text-brass font-mono">04</span><span>{t('map.how4')}</span></li>
                     </ol>
                   </div>
                 )}
-
-                {/* Cinematic vignette */}
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(12,15,23,0.55)_100%)]" />
               </div>
             </div>
 
@@ -299,21 +300,13 @@ export default function Home() {
               <div className="relative pt-2">
                 <span className="eyebrow flex items-center gap-2">
                   <span className="h-px w-6 bg-brass" />
-                  Vol. I · Issue 01
-                  <span className="h-px flex-1 bg-rule" />
-                  <span className="font-mono text-[10px] text-muted normal-case tracking-normal">
-                    {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </span>
+                  {t('hero.kicker')}
                 </span>
-                <h1 className="mt-3 font-display text-[44px] sm:text-[52px] lg:text-[60px] leading-[0.94] tracking-[-0.018em] text-ink-text">
-                  <span className="float-left mr-3 mt-1 text-brass-deep font-display font-bold leading-[0.78] text-[88px] sm:text-[104px] lg:text-[120px]">
-                    A
-                  </span>
-                  n aerial view of <span className="italic text-brass-deep">every</span> rent-stabilized apartment in New York.
+                <h1 className="mt-3 font-display text-[34px] sm:text-[40px] lg:text-[46px] leading-[1.08] tracking-[-0.018em] text-ink-text">
+                  {t('hero.headline')}
                 </h1>
-                <p className="mt-4 clear-left text-[15px] leading-relaxed text-secondary max-w-lg">
-                  Search an address. We fly the camera in, check the building against DHCR and NYCDB,
-                  and — if it’s stabilized — turn your lease history into a draftable overcharge complaint.
+                <p className="mt-4 text-[15px] leading-relaxed text-secondary max-w-lg">
+                  {t('hero.sub')}
                 </p>
               </div>
 
@@ -330,9 +323,9 @@ export default function Home() {
 
               {/* Hero stats */}
               <div className="grid grid-cols-3 gap-3 pt-2">
-                <Stat n="~1M" l="Stabilized units" />
-                <Stat n="6 yr" l="HSTPA window" />
-                <Stat n="57" l="RGB orders modeled" />
+                <Stat n="~1M" l={t('hero.stat.units')} />
+                <Stat n="6 yr" l={t('hero.stat.window')} />
+                <Stat n="57" l={t('hero.stat.orders')} />
               </div>
             </div>
           </div>
@@ -344,14 +337,12 @@ export default function Home() {
         {(isLooking || flightInProgress) && (
           <div className="paper px-6 py-6 animate-fade-in-up">
             <span className="eyebrow">
-              {mapStatus === 'flying' ? 'Approaching' : 'Locating'}
+              {mapStatus === 'flying' ? t('status.approaching') : t('status.locating')}
             </span>
             <div className="mt-2 flex items-center gap-3">
               <div className="h-5 w-5 rounded-full border-2 border-brass border-t-transparent animate-spin" />
               <p className="font-display text-lg text-ink-text">
-                {mapStatus === 'flying'
-                  ? 'Flying the camera in — verdict will appear when we land.'
-                  : 'Cross-checking the BBL against the DHCR + NYCDB record…'}
+                {mapStatus === 'flying' ? t('status.flyingMsg') : t('status.checkingMsg')}
               </p>
             </div>
             <div className="mt-4 space-y-2">
@@ -366,7 +357,7 @@ export default function Home() {
             <div className="flex items-start gap-3">
               <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-rust text-bone text-xs font-bold">!</span>
               <div>
-                <p className="text-sm font-semibold text-rust">Lookup failed</p>
+                <p className="text-sm font-semibold text-rust">{t('error.lookupFailed')}</p>
                 <p className="mt-0.5 text-xs text-rust/80">{lookupError}</p>
               </div>
             </div>
@@ -387,10 +378,10 @@ export default function Home() {
 
         {isEstimating && (
           <div className="paper px-6 py-6 animate-fade-in-up">
-            <span className="eyebrow">Calculating</span>
+            <span className="eyebrow">{t('status.calculating')}</span>
             <div className="mt-2 flex items-center gap-3">
               <div className="h-5 w-5 rounded-full border-2 border-brass border-t-transparent animate-spin" />
-              <p className="font-display text-lg text-ink-text">Walking your lease history forward through every RGB order…</p>
+              <p className="font-display text-lg text-ink-text">{t('status.walkingMsg')}</p>
             </div>
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="h-20 rounded-[10px] shimmer bg-paper-soft" />
@@ -405,7 +396,7 @@ export default function Home() {
             <div className="flex items-start gap-3">
               <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-rust text-bone text-xs font-bold">!</span>
               <div>
-                <p className="text-sm font-semibold text-rust">Estimate failed</p>
+                <p className="text-sm font-semibold text-rust">{t('error.estimateFailed')}</p>
                 <p className="mt-0.5 text-xs text-rust/80">{estimateError}</p>
               </div>
             </div>
