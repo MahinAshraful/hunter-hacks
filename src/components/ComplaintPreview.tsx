@@ -1123,6 +1123,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                           <a href="https://rent.hcr.ny.gov/RentConnect/Tenant/RentOverchargeOverview" target="_blank" rel="noopener noreferrer" className="font-semibold text-brass-deep underline decoration-brass underline-offset-2 hover:text-brass">
                             {t('draft.next.4onlineLink')}
                           </a>
+                          {t('draft.next.4onlineNote')}
                         </span>
                       </div>
                       <div className="flex items-start gap-2">
