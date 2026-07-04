@@ -119,14 +119,20 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
   s("Tenant's Last Name First Name Middle Initial", input.tenantName ?? '');
 
   // ── §2-3 Mailing address ────────────────────────────────────────────
+  // GeoSearch labels end in ", USA" and repeat the city/state that §3
+  // already carries — write just the street part here, plus the apt.
+  const subjectStreet = input.address.split(',')[0].trim() || input.address;
   const aptSuffix = input.unit ? `, Apt ${input.unit}` : '';
-  s('Current Address Apt No', (input.mailingAddress ?? input.address) + aptSuffix);
+  // A custom mailing address (tenant lives elsewhere now) already carries
+  // its own apt in whatever they typed — only append the subject unit when
+  // the mailing address IS the subject building.
+  s('Current Address Apt No', input.mailingAddress ?? subjectStreet + aptSuffix);
   const cityStateZip = [input.mailingCity, input.mailingState, input.mailingZip]
     .filter(Boolean).join(', ');
   s('City State Zip Code', cityStateZip);
 
   // ── §4 Subject building ─────────────────────────────────────────────
-  s('Subject Builing Address and Apartment Number', input.address + aptSuffix);
+  s('Subject Builing Address and Apartment Number', subjectStreet + aptSuffix);
 
   // ── §5 Phones ───────────────────────────────────────────────────────
   s('5  Telephone Number Home', input.phoneHome ?? '');
@@ -198,9 +204,14 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
 
   // ── §11 Owner / managing agent ──────────────────────────────────────
   s('Name', input.ownerName ?? '');
-  // HPD address format: "123 MAIN ST · NEW YORK, NY 10001" — split on ·
+  // HPD address format: "123 MAIN ST, Apt 4 · NEW YORK, NY 10001" — split
+  // on ·, then peel any apt/suite off the street part into the form's
+  // dedicated "Apt. No" box.
   const ownerAddrParts = (input.ownerAddress ?? '').split('·').map((p) => p.trim());
-  s('Number/Street', ownerAddrParts[0] ?? '');
+  const ownerStreetRaw = ownerAddrParts[0] ?? '';
+  const ownerApt = ownerStreetRaw.match(/^(.*?),\s*(?:Apt\.?|Suite|Ste\.?|Unit|#)\s*(.+)$/i);
+  s('Number/Street', ownerApt ? ownerApt[1] : ownerStreetRaw);
+  s('Apt. No', ownerApt ? ownerApt[2] : '');
   s('City State Zip Code_3', ownerAddrParts[1] ?? '');
   s('Telephone Number', input.ownerPhone ?? '');
 
