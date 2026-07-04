@@ -277,8 +277,19 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
   if (input.raisedInCourt && input.courtIndexNo) s('Index No', input.courtIndexNo);
 
   // ── §17 Rent history (up to 7 lease rows) ───────────────────────────
-  const leases = input.estimate.years_analyzed.slice(0, 7);
-  leases.forEach((lease, i) => {
+  // years_analyzed deliberately omits the tenant's very first lease (it's
+  // the legal-rent baseline; see overcharge.ts) — but §17 wants the FULL
+  // rent history, so prepend it here. With more than 7 leases total, keep
+  // the 7 most recent (those are the ones inside the statute window).
+  const allLeases = [
+    ...(baseline
+      ? [{ lease_start: baseline.lease_start, lease_end: baseline.lease_end, actual_monthly: baseline.monthly_rent }]
+      : []),
+    ...input.estimate.years_analyzed.map((y) => ({
+      lease_start: y.lease_start, lease_end: y.lease_end, actual_monthly: y.actual_monthly,
+    })),
+  ];
+  allLeases.slice(-7).forEach((lease, i) => {
     const n = i + 1;
     const fs = splitIso(lease.lease_start);
     const fe = splitIso(lease.lease_end);
