@@ -22,14 +22,9 @@ export const buildings = sqliteTable(
   ],
 );
 
-export const rgbIncreases = sqliteTable("rgb_increases", {
-  orderNo: integer("order_no").primaryKey(),
-  leaseStartFrom: text("lease_start_from").notNull(),
-  leaseStartTo: text("lease_start_to").notNull(),
-  oneYearPct: real("one_year_pct").notNull(),
-  twoYearPct: real("two_year_pct").notNull(),
-  notes: text("notes"),
-});
+// NOTE: RGB order data intentionally lives in data/seed/rgb_orders.json
+// (imported directly by src/lib/rgb.ts) — not in SQLite. Don't add a
+// table for it here; that would create a second source of truth.
 
 export const lookups = sqliteTable("lookups", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -43,7 +38,5 @@ export const lookups = sqliteTable("lookups", {
 
 export type Building = typeof buildings.$inferSelect;
 export type NewBuilding = typeof buildings.$inferInsert;
-export type RgbIncrease = typeof rgbIncreases.$inferSelect;
-export type NewRgbIncrease = typeof rgbIncreases.$inferInsert;
 export type Lookup = typeof lookups.$inferSelect;
 export type NewLookup = typeof lookups.$inferInsert;

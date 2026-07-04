@@ -3,40 +3,46 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 
 /*
- * THEME — "LEDGER"
- * Editorial + architectural-blueprint palette inspired by NYC civic
- * publications, subway brass, and oxidized copper. Warm paper for content,
- * deep ink for cinematic hero/map surfaces.
+ * THEME — "CIVIC"
+ * Calm public-service palette: white surfaces on a soft cool-gray page,
+ * a confident but quiet blue as the single accent, and muted green/red
+ * status colors. Generous radii, subtle shadows, minimal motion.
+ *
+ * NOTE ON TOKEN NAMES: the custom-property names (--brass, --paper,
+ * --verdigris, --rust…) date from the original "ledger" theme and are
+ * kept so the entire component layer didn't need a rename. Read them as
+ * roles, not colors: --brass = primary accent, --paper = page bg,
+ * --bone = card surface, --verdigris = success, --rust = danger.
  */
 :root {
-  --ink:           #0c0f17;     /* near-black, hero/map base */
-  --ink-soft:      #161a24;
-  --ink-line:      #232936;
-  --slate:         #2b3140;
-  --paper:         #f6efe2;     /* warm cream, body */
-  --paper-soft:    #efe5d2;
-  --paper-deep:    #e6d8bf;
-  --bone:          #fbf6ea;
-  --rule:          #d9caa9;     /* hairline divider */
-  --rule-strong:   #b9a47a;
-  --ink-text:      #15171f;
-  --secondary:     #5a4f3d;     /* warm gray-brown */
-  --muted:         #8b7e63;
-  --brass:         #b07a1a;     /* primary accent */
-  --brass-deep:    #875a0d;
-  --brass-glow:    #d8a23d;
-  --brass-wash:    #f3e7c8;
-  --verdigris:     #2f6b59;     /* success — oxidized copper */
-  --verdigris-bg:  #d9ebd8;
-  --verdigris-bd:  #95c8a6;
-  --rust:          #9a3514;     /* danger — iron rust */
-  --rust-bg:       #f6dccc;
-  --rust-bd:       #e8a884;
-  --warning:       #8b6914;
-  --warning-bg:    #f5e6b8;
-  --warning-bd:    #dcc46a;
+  --ink:           #16233a;     /* deep navy — map base, dark accents */
+  --ink-soft:      #1f2d47;
+  --ink-line:      #2c3d5c;
+  --slate:         #3f5471;
+  --paper:         #f5f7fa;     /* page background — soft cool gray */
+  --paper-soft:    #eceff4;
+  --paper-deep:    #e2e7ee;
+  --bone:          #ffffff;     /* card surface */
+  --rule:          #dde3ec;     /* hairline divider */
+  --rule-strong:   #b8c4d4;
+  --ink-text:      #1c2634;
+  --secondary:     #435268;
+  --muted:         #5f6d81;
+  --brass:         #2563eb;     /* primary accent (civic blue) */
+  --brass-deep:    #1e4fc2;
+  --brass-glow:    #7da7f4;
+  --brass-wash:    #e9f0fd;
+  --verdigris:     #17724f;     /* success */
+  --verdigris-bg:  #e3f4ea;
+  --verdigris-bd:  #a9d9bd;
+  --rust:          #b3261e;     /* danger */
+  --rust-bg:       #fdecea;
+  --rust-bd:       #f2b8b1;
+  --warning:       #8a5a00;
+  --warning-bg:    #fcf3d9;
+  --warning-bd:    #e7cf8c;
 
-  --radius-card:   14px;
+  --radius-card:   16px;
   --radius-pill:   999px;
 }
 
@@ -89,7 +95,7 @@
   --color-neutral-border:var(--rule);
 
   --font-sans:    var(--font-sans-stack);
-  --font-display: var(--font-display);
+  --font-display: var(--font-sans-stack);
   --font-mono:    var(--font-mono);
 }
 
@@ -105,48 +111,46 @@ body {
 
 button, a, input, select, textarea {
   transition:
-    color 180ms ease,
-    background-color 180ms ease,
-    border-color 180ms ease,
-    box-shadow 220ms ease,
-    transform 180ms ease;
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 180ms ease;
 }
 
-/* Display headlines: editorial serif, tight tracking */
+/* Display headlines: clean semibold sans (was an editorial serif) */
 .font-display {
-  font-family: var(--font-display), "Times New Roman", serif;
-  font-feature-settings: "ss01", "lnum";
-  letter-spacing: -0.012em;
+  font-family: var(--font-sans-stack), system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 /* Tabular figures for monetary/data tables */
 .tabular { font-variant-numeric: tabular-nums; }
 
-/* Tiny-caps used for kicker labels */
+/* Small caps kicker labels */
 .eyebrow {
   font-family: var(--font-sans-stack), sans-serif;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
-/* Architectural rule (hairline) */
+/* Hairline rule */
 .rule {
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--rule-strong) 12%, var(--rule-strong) 88%, transparent);
+  background: var(--rule);
 }
 
-/* Paper card — primary content surface */
+/* Card — primary content surface */
 .paper {
   background: var(--bone);
   border: 1px solid var(--rule);
   border-radius: var(--radius-card);
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.6) inset,
-    0 1px 1px rgba(20, 14, 6, 0.04),
-    0 12px 30px -18px rgba(20, 14, 6, 0.18);
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 8px 24px -12px rgba(16, 24, 40, 0.08);
 }
 
 .paper-deep {
@@ -155,32 +159,34 @@ button, a, input, select, textarea {
   border-radius: var(--radius-card);
 }
 
-/* Ink card — for hero overlays on dark surfaces */
+/* Light frosted card — overlays on the map */
 .ink-card {
-  background: rgba(12, 15, 23, 0.78);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid rgba(216, 162, 61, 0.18);
-  border-radius: var(--radius-card);
-  color: #f3ead4;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  border: 1px solid rgba(184, 196, 212, 0.6);
+  border-radius: 12px;
+  color: var(--ink-text);
+  box-shadow: 0 2px 10px -4px rgba(16, 24, 40, 0.15);
 }
 
-/* Brass primary button */
+/* Primary button — solid, calm blue */
 .btn-brass {
-  background: linear-gradient(180deg, var(--brass-glow) 0%, var(--brass) 50%, var(--brass-deep) 100%);
-  color: #1a1305;
+  background: var(--brass);
+  color: #ffffff;
   font-weight: 600;
   border-radius: 12px;
   border: 1px solid var(--brass-deep);
-  box-shadow:
-    0 1px 0 rgba(255, 240, 200, 0.55) inset,
-    0 -1px 0 rgba(60, 38, 0, 0.35) inset,
-    0 8px 18px -8px rgba(176, 122, 26, 0.55);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1);
   letter-spacing: 0.005em;
 }
-.btn-brass:hover { filter: brightness(1.04) saturate(1.05); transform: translateY(-1px); }
-.btn-brass:active { transform: translateY(0); filter: brightness(0.96); }
-.btn-brass:disabled { opacity: 0.55; cursor: not-allowed; transform: none; filter: none; }
+.btn-brass:hover { background: var(--brass-deep); }
+.btn-brass:active { background: var(--brass-deep); box-shadow: none; }
+.btn-brass:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-brass:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
 
 .btn-ghost {
   background: var(--bone);
@@ -190,58 +196,61 @@ button, a, input, select, textarea {
   font-weight: 500;
 }
 .btn-ghost:hover { background: var(--paper-soft); border-color: var(--rule-strong); }
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
 
-/* Animated grid backdrop for hero (architectural blueprint) */
+/* Subtle grid backdrop (kept for the info page) */
 .blueprint-grid {
   background-image:
-    linear-gradient(rgba(216, 162, 61, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(216, 162, 61, 0.07) 1px, transparent 1px);
+    linear-gradient(rgba(63, 84, 113, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(63, 84, 113, 0.05) 1px, transparent 1px);
   background-size: 56px 56px;
   background-position: -1px -1px;
 }
 
 .paper-grain {
   background-image:
-    radial-gradient(rgba(127, 96, 36, 0.05) 1px, transparent 1px);
+    radial-gradient(rgba(63, 84, 113, 0.04) 1px, transparent 1px);
   background-size: 3px 3px;
 }
 
-/* MapLibre re-skin — quietly themed controls */
+/* MapLibre — light, quiet controls */
 .maplibregl-ctrl-group {
-  background: rgba(12, 15, 23, 0.7) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(216, 162, 61, 0.25) !important;
-  box-shadow: none !important;
+  border: 1px solid var(--rule-strong) !important;
+  box-shadow: 0 2px 8px -2px rgba(16, 24, 40, 0.12) !important;
   border-radius: 10px !important;
   overflow: hidden;
 }
 .maplibregl-ctrl-group button {
   background-color: transparent !important;
 }
-.maplibregl-ctrl-group button + button { border-top-color: rgba(216, 162, 61, 0.18) !important; }
-.maplibregl-ctrl-group button span { filter: invert(1) brightness(1.6) sepia(0.3) saturate(2); }
+.maplibregl-ctrl-group button + button { border-top-color: var(--rule) !important; }
 .maplibregl-ctrl-attrib {
-  background: rgba(12, 15, 23, 0.6) !important;
-  color: rgba(243, 234, 212, 0.7) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: var(--secondary) !important;
   font-size: 10px !important;
   border-radius: 6px !important;
   padding: 2px 8px !important;
 }
-.maplibregl-ctrl-attrib a { color: rgba(216, 162, 61, 0.85) !important; }
+.maplibregl-ctrl-attrib a { color: var(--brass) !important; }
 .maplibregl-popup-content {
-  background: var(--ink-soft) !important;
-  color: #f3ead4 !important;
-  border: 1px solid rgba(216, 162, 61, 0.3);
+  background: var(--bone) !important;
+  color: var(--ink-text) !important;
+  border: 1px solid var(--rule-strong);
   border-radius: 10px !important;
   font-family: var(--font-sans-stack), sans-serif !important;
-  box-shadow: 0 12px 30px -8px rgba(0,0,0,0.6) !important;
+  box-shadow: 0 12px 30px -8px rgba(16, 24, 40, 0.25) !important;
   padding: 12px 14px !important;
 }
-.maplibregl-popup-tip { border-top-color: var(--ink-soft) !important; border-bottom-color: var(--ink-soft) !important; }
+.maplibregl-popup-tip { border-top-color: var(--bone) !important; border-bottom-color: var(--bone) !important; }
 
-/* Animations */
+/* Animations — kept minimal and purposeful */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes fadeIn {
@@ -249,40 +258,49 @@ button, a, input, select, textarea {
   to   { opacity: 1; }
 }
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
+  from { opacity: 0; transform: scale(0.98); }
   to   { opacity: 1; transform: scale(1); }
 }
 @keyframes brassPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(216, 162, 61, 0.35); }
-  50%      { box-shadow: 0 0 0 8px rgba(216, 162, 61, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.25); }
+  50%      { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
 }
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
-@keyframes orbit {
-  to { transform: rotate(360deg); }
-}
 
-.animate-fade-in-up { animation: fadeInUp 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.animate-fade-in    { animation: fadeIn 0.4s ease-out both; }
-.animate-scale-in   { animation: scaleIn 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.animate-brass-pulse{ animation: brassPulse 2.4s ease-out infinite; }
+.animate-fade-in-up { animation: fadeInUp 0.4s ease-out both; }
+.animate-fade-in    { animation: fadeIn 0.35s ease-out both; }
+.animate-scale-in   { animation: scaleIn 0.3s ease-out both; }
+.animate-brass-pulse{ animation: brassPulse 2.8s ease-out infinite; }
 
 .shimmer {
-  background: linear-gradient(90deg, transparent, rgba(216, 162, 61, 0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.22), transparent);
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
 }
 
-/* react-datepicker — re-themed for paper */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-brass-pulse,
+  .shimmer,
+  .animate-spin,
+  .animate-ping {
+    animation: none !important;
+  }
+}
+
+/* react-datepicker — re-themed */
 .react-datepicker {
   font-family: var(--font-sans-stack), sans-serif;
   border: 1px solid var(--rule-strong);
   border-radius: 12px;
   overflow: hidden;
   background: var(--bone);
-  box-shadow: 0 18px 40px -18px rgba(20, 14, 6, 0.35);
+  box-shadow: 0 18px 40px -18px rgba(16, 24, 40, 0.25);
 }
 .react-datepicker__header {
   background: var(--paper-soft);
@@ -296,7 +314,7 @@ button, a, input, select, textarea {
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
   background: var(--brass) !important;
-  color: #1a1305 !important;
+  color: #ffffff !important;
   border-radius: 6px;
 }
 .react-datepicker__day--today {
@@ -322,15 +340,15 @@ button, a, input, select, textarea {
 .react-datepicker__year-select:focus {
   outline: none;
   border-color: var(--brass);
-  box-shadow: 0 0 0 2px rgba(176, 122, 26, 0.25);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 .react-datepicker__triangle { display: none; }
 .react-datepicker-popper { z-index: 60; }
 
-/* Scrollbar polish */
+/* Scrollbar */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb { background: rgba(176, 122, 26, 0.4); border-radius: 8px; }
+*::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.4); border-radius: 8px; }
 *::-webkit-scrollbar-track { background: transparent; }
 
 /* Selection */
-::selection { background: rgba(216, 162, 61, 0.35); color: #1a1305; }
+::selection { background: rgba(37, 99, 235, 0.18); color: var(--ink-text); }

@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import maplibregl, { type Map as MLMap, type LngLatLike } from 'maplibre-gl';
+import maplibregl, {
+  type Map as MLMap,
+  type LngLatLike,
+  type MapGeoJSONFeature,
+} from 'maplibre-gl';
 
 export type MapStatus = 'idle' | 'flying' | 'arrived';
 
@@ -23,11 +27,11 @@ const NYC_CENTER: [number, number] = [-73.97, 40.76];
 const GLOBE_CENTER: [number, number] = [-50, 30];
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
-const HIGHLIGHT_FILL = '#f5c25c';
-const HIGHLIGHT_FILL_DEEP = '#e6a838';
-const HIGHLIGHT_FOOTPRINT = '#fff1bd';
-const BUILDING_FILL = '#a89169';
-const BUILDING_FILL_TOP = '#d4b88a';
+const HIGHLIGHT_FILL = '#3b82f6';
+const HIGHLIGHT_FILL_DEEP = '#2563eb';
+const HIGHLIGHT_FOOTPRINT = '#bfdbfe';
+const BUILDING_FILL = '#c3cedb';
+const BUILDING_FILL_TOP = '#dde5ee';
 
 const NYC_FOOTPRINTS_URL =
   'https://data.cityofnewyork.us/resource/5zhs-2jue.geojson';
@@ -233,6 +237,21 @@ function bufferGeometry(g: GeoJSON.Geometry, offsetMeters: number): GeoJSON.Geom
   return g;
 }
 
+// queryRenderedFeatures returns GeoJSONFeature class instances whose own
+// properties include `_vectorTileFeature` (a class instance). If one of
+// those leaks into a GeoJSON source's setData(), maplibre posts it to its
+// worker, whose serializer throws "can't serialize object of unregistered
+// class …". Strip features down to plain GeoJSON before anything
+// downstream can hold onto them.
+function toPlainFeature(f: MapGeoJSONFeature): GeoJSON.Feature {
+  return {
+    type: 'Feature',
+    id: f.id,
+    properties: { ...(f.properties ?? {}) },
+    geometry: f.geometry,
+  };
+}
+
 // Combine all rendered tile features that reference the same building
 // into one geometry. For OpenMapTiles' building layer this isn't perfect
 // but is a reasonable union for visual purposes.
@@ -267,7 +286,10 @@ function combineToFeature(features: GeoJSON.Feature[]): GeoJSON.Feature | null {
 export default function CityMap3D({ target, onStatusChange, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MLMap | null>(null);
-  const styleReadyRef = useRef(false);
+  // State (not a ref) so the fly-to / reset effects below re-run once the
+  // style finishes loading — otherwise a target picked before 'load' fires
+  // would never trigger the flight.
+  const [styleReady, setStyleReady] = useState(false);
   const targetMarkerRef = useRef<maplibregl.Marker | null>(null);
   const slowSpinRef = useRef<number | null>(null);
   const userInteractedRef = useRef(false);
@@ -277,7 +299,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
     bin: string;
     feature: GeoJSON.Feature;
   } | null>(null);
-  const [, force] = useState(0);
+  // Whether a flight has started — gates the reset-to-globe effect so it
+  // only runs when there is actually something to reset.
+  const hadTargetRef = useRef(false);
 
   // ── init map ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -292,8 +316,8 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       bearing: 0,
       attributionControl: { compact: true },
       maxPitch: 80,
-      ...({ antialias: true } as Record<string, unknown>),
-    } as ConstructorParameters<typeof maplibregl.Map>[0]);
+      canvasContextAttributes: { antialias: true },
+    });
 
     mapRef.current = map;
     map.addControl(
@@ -323,22 +347,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
     window.addEventListener('orientationchange', onWinResize);
 
     map.on('load', () => {
-      try {
-        const m = map as unknown as { setProjection?: (p: { type: string }) => void };
-        m.setProjection?.({ type: 'globe' });
-      } catch { /* ignore */ }
-
-      try {
-        const m = map as unknown as { setFog?: (f: Record<string, unknown>) => void };
-        m.setFog?.({
-          range: [0.8, 8],
-          color: '#1a1f2a',
-          'horizon-blend': 0.2,
-          'high-color': '#c8a878',
-          'space-color': '#0c0f17',
-          'star-intensity': 0.55,
-        });
-      } catch { /* ignore */ }
+      map.setProjection({ type: 'globe' });
 
       // Slow globe spin while idle
       const spin = () => {
@@ -352,8 +361,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       slowSpinRef.current = window.setTimeout(spin, 600);
 
       attachBuildingLayers(map);
-      styleReadyRef.current = true;
-      force((v) => v + 1);
+      setStyleReady(true);
     });
 
     const stopSpin = () => {
@@ -379,9 +387,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       resizeObsRef.current = null;
       map.remove();
       mapRef.current = null;
-      styleReadyRef.current = false;
+      setStyleReady(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   // ── pre-fetch building footprint by BIN as soon as a target is picked
@@ -411,8 +419,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
   // ── fly to target ────────────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !styleReadyRef.current || !target) return;
+    if (!map || !styleReady || !target) return;
 
+    hadTargetRef.current = true;
     userInteractedRef.current = true;
     if (slowSpinRef.current) {
       clearTimeout(slowSpinRef.current);
@@ -491,13 +500,14 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
       clearTimeout(t2);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target?.lat, target?.lng, target?.bin]);
+  }, [target?.lat, target?.lng, target?.bin, styleReady]);
 
   // ── reset to globe when target cleared ───────────────────────────────
   useEffect(() => {
-    if (target) return;
+    if (target || !hadTargetRef.current) return;
     const map = mapRef.current;
-    if (!map || !styleReadyRef.current) return;
+    if (!map || !styleReady) return;
+    hadTargetRef.current = false;
     if (targetMarkerRef.current) {
       targetMarkerRef.current.remove();
       targetMarkerRef.current = null;
@@ -513,7 +523,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
     });
     onStatusChange?.('idle');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target]);
+  }, [target, styleReady]);
 
   return (
     <div className={className ?? 'absolute inset-0'}>
@@ -548,9 +558,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
           width: 10px;
           height: 10px;
           border-radius: 999px;
-          background: rgba(245, 194, 92, 0.95);
+          background: rgba(37, 99, 235, 0.9);
           transform: translate(-50%, 0);
-          box-shadow: 0 0 12px 3px rgba(245, 194, 92, 0.5);
+          box-shadow: 0 0 12px 3px rgba(37, 99, 235, 0.4);
           z-index: 2;
           animation: markerPulse 2.2s ease-out infinite;
         }
@@ -561,7 +571,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
           width: 4px;
           height: 220px;
           transform: translate(-50%, 0);
-          background: linear-gradient(to top, rgba(245, 194, 92, 0.55), rgba(245, 194, 92, 0));
+          background: linear-gradient(to top, rgba(37, 99, 235, 0.4), rgba(37, 99, 235, 0));
           filter: blur(2px);
           z-index: 1;
           animation: beamPulse 2.6s ease-in-out infinite;
@@ -573,9 +583,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
           100% { transform: translateY(0); opacity: 1; }
         }
         @keyframes markerPulse {
-          0%   { box-shadow: 0 0 0 0 rgba(245, 194, 92, 0.55), 0 0 12px 3px rgba(245, 194, 92, 0.5); transform: translate(-50%, 0) scale(1); }
-          70%  { box-shadow: 0 0 0 24px rgba(245, 194, 92, 0), 0 0 12px 3px rgba(245, 194, 92, 0.5); transform: translate(-50%, 0) scale(1.4); }
-          100% { box-shadow: 0 0 0 0 rgba(245, 194, 92, 0), 0 0 12px 3px rgba(245, 194, 92, 0.5); transform: translate(-50%, 0) scale(1); }
+          0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45), 0 0 12px 3px rgba(37, 99, 235, 0.4); transform: translate(-50%, 0) scale(1); }
+          70%  { box-shadow: 0 0 0 24px rgba(37, 99, 235, 0), 0 0 12px 3px rgba(37, 99, 235, 0.4); transform: translate(-50%, 0) scale(1.4); }
+          100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0), 0 0 12px 3px rgba(37, 99, 235, 0.4); transform: translate(-50%, 0) scale(1); }
         }
         @keyframes beamPulse {
           0%, 100% { opacity: 0.55; }
@@ -604,12 +614,6 @@ function attachBuildingLayers(map: MLMap) {
     }
   }
 
-  try {
-    if (style.layers?.find((l) => l.id === 'background')) {
-      map.setPaintProperty('background', 'background-color', '#13171f');
-    }
-  } catch { /* ignore */ }
-
   // Hide the default building layers from the underlying style
   for (const id of ['building', 'building-top', 'building-3d']) {
     if (style.layers?.find((l) => l.id === id)) {
@@ -623,7 +627,7 @@ function attachBuildingLayers(map: MLMap) {
     ) ?? Object.keys(style.sources ?? {})[0];
   if (!sourceId) return;
 
-  // Base 3D extrusion — every building, warm sandstone
+  // Base 3D extrusion — every building, cool slate on the light basemap
   if (!map.getLayer('ledger-buildings-3d')) {
     map.addLayer(
       {
@@ -636,8 +640,8 @@ function attachBuildingLayers(map: MLMap) {
           'fill-extrusion-color': [
             'interpolate', ['linear'], ['get', 'render_height'],
             0,   BUILDING_FILL,
-            40,  '#b89569',
-            120, '#9c8052',
+            40,  '#aebccd',
+            120, '#96a8be',
             240, BUILDING_FILL_TOP,
           ],
           'fill-extrusion-height': [
@@ -743,13 +747,15 @@ function resolveBuildingFeature(
     // 60-px box at z18 ≈ 18m — wide enough to catch the building even
     // if the address geocoded a few meters away.
     const radius = 60;
-    const features = m.queryRenderedFeatures(
-      [
-        [point.x - radius, point.y - radius],
-        [point.x + radius, point.y + radius],
-      ],
-      { layers: ['ledger-buildings-3d'] },
-    ) as unknown as GeoJSON.Feature[];
+    const features = m
+      .queryRenderedFeatures(
+        [
+          [point.x - radius, point.y - radius],
+          [point.x + radius, point.y + radius],
+        ],
+        { layers: ['ledger-buildings-3d'] },
+      )
+      .map(toPlainFeature);
 
     if (!features.length) return null;
 
@@ -876,14 +882,14 @@ function placePin(
       <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="lmg" x1="17" y1="0" x2="17" y2="42" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#ffd070"/>
-            <stop offset="1" stop-color="#b07a1a"/>
+            <stop offset="0" stop-color="#60a5fa"/>
+            <stop offset="1" stop-color="#1e4fc2"/>
           </linearGradient>
         </defs>
         <path d="M17 2c7.732 0 14 5.82 14 13 0 9.5-14 25-14 25S3 24.5 3 15C3 7.82 9.268 2 17 2z"
-          fill="url(#lmg)" stroke="#1a1305" stroke-width="1.5" stroke-linejoin="round"/>
-        <circle cx="17" cy="15" r="4.5" fill="#1a1305"/>
-        <circle cx="17" cy="15" r="2" fill="#ffd070"/>
+          fill="url(#lmg)" stroke="#12295e" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="17" cy="15" r="4.5" fill="#ffffff"/>
+        <circle cx="17" cy="15" r="2" fill="#1e4fc2"/>
       </svg>
     </div>
   `;

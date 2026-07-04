@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { autocomplete, type GeoResult } from '@/lib/geosearch';
+import { useI18n } from '@/lib/i18n';
 
 type Props = {
   onSelect: (result: GeoResult) => void;
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export default function AddressSearch({ onSelect, disabled, variant = 'default', initialValue }: Props) {
+  const { t } = useI18n();
   const [inputValue, setInputValue] = useState(initialValue ?? '');
   const [results, setResults] = useState<GeoResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -21,22 +23,25 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // All setState happens inside the (async) timeout callback rather than
+  // the effect body — short inputs just clear the dropdown on a 0ms tick.
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = inputValue.trim();
-    if (trimmed.length < 3) {
-      setResults([]);
-      setIsOpen(false);
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
+    const tooShort = trimmed.length < 3;
     debounceRef.current = setTimeout(async () => {
+      if (tooShort) {
+        setResults([]);
+        setIsOpen(false);
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
       const data = await autocomplete(trimmed);
       setResults(data);
       setIsOpen(data.length > 0);
       setIsLoading(false);
-    }, 220);
+    }, tooShort ? 0 : 220);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
@@ -107,7 +112,7 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
             </svg>
-            <span className="eyebrow hidden sm:inline">Address</span>
+            <span className="eyebrow hidden sm:inline">{t('search.label')}</span>
           </span>
           <input
             type="text"
@@ -119,13 +124,14 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            placeholder={isHero ? 'e.g. 350 West 50th Street' : 'Enter a NYC address…'}
+            placeholder={isHero ? t('search.placeholderHero') : t('search.placeholder')}
             disabled={disabled}
             className={`flex-1 bg-transparent px-4 ${
               isHero ? 'py-4 text-lg font-display' : 'py-3 text-base'
             } text-ink-text placeholder:text-muted/80 focus:outline-none disabled:opacity-50`}
             role="combobox"
             aria-expanded={isOpen}
+            aria-controls="address-search-listbox"
             aria-autocomplete="list"
             aria-haspopup="listbox"
             aria-activedescendant={activeIndex >= 0 ? `option-${activeIndex}` : undefined}
@@ -148,6 +154,7 @@ export default function AddressSearch({ onSelect, disabled, variant = 'default',
 
       {isOpen && results.length > 0 && (
         <ul
+          id="address-search-listbox"
           role="listbox"
           className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-[12px] border border-rule-strong bg-bone py-1 shadow-[0_24px_60px_-20px_rgba(20,14,6,0.35)] animate-fade-in-up"
         >

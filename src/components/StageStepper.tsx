@@ -1,12 +1,15 @@
 'use client';
 
+import { useI18n } from '@/lib/i18n';
+import type { MessageKey } from '@/lib/i18n/messages/en';
+
 type Stage = 'search' | 'verdict' | 'estimate' | 'complaint';
 
-const STEPS: { id: Stage; label: string; numeral: string }[] = [
-  { id: 'search',    label: 'Locate',   numeral: 'I' },
-  { id: 'verdict',   label: 'Verdict',  numeral: 'II' },
-  { id: 'estimate',  label: 'Estimate', numeral: 'III' },
-  { id: 'complaint', label: 'Draft',    numeral: 'IV' },
+const STEPS: { id: Stage; labelKey: MessageKey; numeral: string }[] = [
+  { id: 'search',    labelKey: 'stepper.locate',   numeral: '1' },
+  { id: 'verdict',   labelKey: 'stepper.verdict',  numeral: '2' },
+  { id: 'estimate',  labelKey: 'stepper.estimate', numeral: '3' },
+  { id: 'complaint', labelKey: 'stepper.draft',    numeral: '4' },
 ];
 
 type Props = {
@@ -16,6 +19,7 @@ type Props = {
 };
 
 export default function StageStepper({ current, reachable, onJump }: Props) {
+  const { t } = useI18n();
   const currentIndex = STEPS.findIndex((s) => s.id === current);
 
   return (
@@ -48,7 +52,7 @@ export default function StageStepper({ current, reachable, onJump }: Props) {
                   isCurrent
                     ? 'border-brass bg-brass-wash text-brass-deep animate-brass-pulse'
                     : isPast
-                    ? 'border-brass bg-brass text-[#1a1305]'
+                    ? 'border-brass bg-brass text-white'
                     : reached
                     ? 'border-rule-strong bg-bone text-secondary'
                     : 'border-rule bg-paper-soft text-muted'
@@ -65,12 +69,12 @@ export default function StageStepper({ current, reachable, onJump }: Props) {
               </span>
               <span className="min-w-0 truncate">
                 <span className={`block text-[10px] tracking-[0.18em] font-semibold uppercase ${accent}`}>
-                  Step {step.numeral}
+                  {t('stepper.step', { n: step.numeral })}
                 </span>
                 <span className={`font-display text-[15px] leading-tight ${
                   isCurrent ? 'text-ink-text font-semibold' : reached ? 'text-ink-text' : 'text-muted'
                 }`}>
-                  {step.label}
+                  {t(step.labelKey)}
                 </span>
               </span>
             </button>
