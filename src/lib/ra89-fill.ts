@@ -58,6 +58,7 @@ export type Ra89Input = {
   // §15 security deposit
   securityDepositAmount?: number;
   securityDepositPaidOn?: string;
+  securityDepositUsedForRent?: boolean; // vacated & applied deposit to rent?
 
   // §16 court
   raisedInCourt?: boolean;
@@ -228,10 +229,21 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
   s('Text32', input.narrative);
 
   // ── §15 Security deposit ────────────────────────────────────────────
+  // The form asks the same amount in two spots — "A security deposit of $"
+  // (Security Deposit) and "I am being charged $" (Security Deposit_2) —
+  // plus the date it was paid (Month_6/Day_6/Year_6).
   if (input.securityDepositAmount) {
-    s('Security Deposit', usd(input.securityDepositAmount));
+    const amt = usd(input.securityDepositAmount);
+    s('Security Deposit', amt);
+    s('Security Deposit_2', amt);
     const dp = splitIso(input.securityDepositPaidOn);
     s('Month_6', dp.m); s('Day_6', dp.d); s('Year_6', dp.y);
+  }
+  // §15 "If you vacated the subject apartment did you use your security
+  // deposit to pay part of the rent?" — Check Box33 = Yes, Check Box34 = No.
+  if (input.securityDepositUsedForRent !== undefined) {
+    c('Check Box33', input.securityDepositUsedForRent === true);
+    c('Check Box34', input.securityDepositUsedForRent === false);
   }
 
   // ── §16 Raised in court ─────────────────────────────────────────────

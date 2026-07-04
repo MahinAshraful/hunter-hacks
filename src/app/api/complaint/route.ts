@@ -147,6 +147,7 @@ const RequestSchema = z.object({
 
   securityDepositAmount: z.number().min(0).max(1_000_000).optional(),
   securityDepositPaidOn: ISO_DATE.optional(),
+  securityDepositUsedForRent: z.boolean().optional(),
 
   raisedInCourt: z.boolean().optional(),
   courtIndexNo: z.string().max(80).optional(),

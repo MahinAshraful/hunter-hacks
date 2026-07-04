@@ -85,6 +85,9 @@ export type ComplaintInput = {
   // §15 — security deposit
   securityDepositAmount?: number;
   securityDepositPaidOn?: string;
+  // "If you vacated the subject apartment did you use your security
+  // deposit to pay part of the rent?" — RA-89 §15 yes/no.
+  securityDepositUsedForRent?: boolean;
 
   // §16 — court history
   raisedInCourt?: boolean;
@@ -250,6 +253,7 @@ function buildUserMessage(input: ComplaintInput, fields: FieldMap): string {
     security_deposit: {
       amount: input.securityDepositAmount ?? null,
       paid_on: input.securityDepositPaidOn ?? null,
+      used_for_rent: input.securityDepositUsedForRent ?? null,
       presumed: securityDepositPresumed,
     },
     court: {
