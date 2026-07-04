@@ -27,11 +27,11 @@ const NYC_CENTER: [number, number] = [-73.97, 40.76];
 const GLOBE_CENTER: [number, number] = [-50, 30];
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
-const HIGHLIGHT_FILL = '#f5c25c';
-const HIGHLIGHT_FILL_DEEP = '#e6a838';
-const HIGHLIGHT_FOOTPRINT = '#fff1bd';
-const BUILDING_FILL = '#a89169';
-const BUILDING_FILL_TOP = '#d4b88a';
+const HIGHLIGHT_FILL = '#3b82f6';
+const HIGHLIGHT_FILL_DEEP = '#2563eb';
+const HIGHLIGHT_FOOTPRINT = '#bfdbfe';
+const BUILDING_FILL = '#c3cedb';
+const BUILDING_FILL_TOP = '#dde5ee';
 
 const NYC_FOOTPRINTS_URL =
   'https://data.cityofnewyork.us/resource/5zhs-2jue.geojson';
@@ -558,9 +558,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
           width: 10px;
           height: 10px;
           border-radius: 999px;
-          background: rgba(245, 194, 92, 0.95);
+          background: rgba(37, 99, 235, 0.9);
           transform: translate(-50%, 0);
-          box-shadow: 0 0 12px 3px rgba(245, 194, 92, 0.5);
+          box-shadow: 0 0 12px 3px rgba(37, 99, 235, 0.4);
           z-index: 2;
           animation: markerPulse 2.2s ease-out infinite;
         }
@@ -571,7 +571,7 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
           width: 4px;
           height: 220px;
           transform: translate(-50%, 0);
-          background: linear-gradient(to top, rgba(245, 194, 92, 0.55), rgba(245, 194, 92, 0));
+          background: linear-gradient(to top, rgba(37, 99, 235, 0.4), rgba(37, 99, 235, 0));
           filter: blur(2px);
           z-index: 1;
           animation: beamPulse 2.6s ease-in-out infinite;
@@ -583,9 +583,9 @@ export default function CityMap3D({ target, onStatusChange, className }: Props) 
           100% { transform: translateY(0); opacity: 1; }
         }
         @keyframes markerPulse {
-          0%   { box-shadow: 0 0 0 0 rgba(245, 194, 92, 0.55), 0 0 12px 3px rgba(245, 194, 92, 0.5); transform: translate(-50%, 0) scale(1); }
-          70%  { box-shadow: 0 0 0 24px rgba(245, 194, 92, 0), 0 0 12px 3px rgba(245, 194, 92, 0.5); transform: translate(-50%, 0) scale(1.4); }
-          100% { box-shadow: 0 0 0 0 rgba(245, 194, 92, 0), 0 0 12px 3px rgba(245, 194, 92, 0.5); transform: translate(-50%, 0) scale(1); }
+          0%   { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45), 0 0 12px 3px rgba(37, 99, 235, 0.4); transform: translate(-50%, 0) scale(1); }
+          70%  { box-shadow: 0 0 0 24px rgba(37, 99, 235, 0), 0 0 12px 3px rgba(37, 99, 235, 0.4); transform: translate(-50%, 0) scale(1.4); }
+          100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0), 0 0 12px 3px rgba(37, 99, 235, 0.4); transform: translate(-50%, 0) scale(1); }
         }
         @keyframes beamPulse {
           0%, 100% { opacity: 0.55; }
@@ -614,12 +614,6 @@ function attachBuildingLayers(map: MLMap) {
     }
   }
 
-  try {
-    if (style.layers?.find((l) => l.id === 'background')) {
-      map.setPaintProperty('background', 'background-color', '#13171f');
-    }
-  } catch { /* ignore */ }
-
   // Hide the default building layers from the underlying style
   for (const id of ['building', 'building-top', 'building-3d']) {
     if (style.layers?.find((l) => l.id === id)) {
@@ -633,7 +627,7 @@ function attachBuildingLayers(map: MLMap) {
     ) ?? Object.keys(style.sources ?? {})[0];
   if (!sourceId) return;
 
-  // Base 3D extrusion — every building, warm sandstone
+  // Base 3D extrusion — every building, cool slate on the light basemap
   if (!map.getLayer('ledger-buildings-3d')) {
     map.addLayer(
       {
@@ -646,8 +640,8 @@ function attachBuildingLayers(map: MLMap) {
           'fill-extrusion-color': [
             'interpolate', ['linear'], ['get', 'render_height'],
             0,   BUILDING_FILL,
-            40,  '#b89569',
-            120, '#9c8052',
+            40,  '#aebccd',
+            120, '#96a8be',
             240, BUILDING_FILL_TOP,
           ],
           'fill-extrusion-height': [
@@ -888,14 +882,14 @@ function placePin(
       <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="lmg" x1="17" y1="0" x2="17" y2="42" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#ffd070"/>
-            <stop offset="1" stop-color="#b07a1a"/>
+            <stop offset="0" stop-color="#60a5fa"/>
+            <stop offset="1" stop-color="#1e4fc2"/>
           </linearGradient>
         </defs>
         <path d="M17 2c7.732 0 14 5.82 14 13 0 9.5-14 25-14 25S3 24.5 3 15C3 7.82 9.268 2 17 2z"
-          fill="url(#lmg)" stroke="#1a1305" stroke-width="1.5" stroke-linejoin="round"/>
-        <circle cx="17" cy="15" r="4.5" fill="#1a1305"/>
-        <circle cx="17" cy="15" r="2" fill="#ffd070"/>
+          fill="url(#lmg)" stroke="#12295e" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="17" cy="15" r="4.5" fill="#ffffff"/>
+        <circle cx="17" cy="15" r="2" fill="#1e4fc2"/>
       </svg>
     </div>
   `;
