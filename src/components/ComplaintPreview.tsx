@@ -92,6 +92,12 @@ type FormState = {
   ownerName: string;
   ownerAddress: string;
   ownerPhone: string;
+  // §12 — who the tenant pays rent to, shown only for sub-tenants and
+  // roommates, and always optional (a roommate may pay the owner directly).
+  payeeName: string;
+  payeeStreet: string;
+  payeeCityStateZip: string;
+  payeePhone: string;
   causes: OverchargeCause[];
   // §15 — collected only when the 'security_deposit' cause is checked;
   // amount + date are then required (see requiredMissing). usedForRent is
@@ -131,6 +137,10 @@ const EMPTY_FORM: FormState = {
   ownerName: '',
   ownerAddress: '',
   ownerPhone: '',
+  payeeName: '',
+  payeeStreet: '',
+  payeeCityStateZip: '',
+  payeePhone: '',
   causes: ['other'],
   securityDepositAmount: '',
   securityDepositPaidOn: '',
@@ -590,6 +600,7 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
       // to the building's own city/state (parsed out of `address`) and
       // ZIP (from the BBL-keyed buildings row, via `verdict.zipcode`).
       const buildingCityState = form.mailingSameAsBuilding ? cityStateFromAddress(address) : {};
+      const paysNonOwner = form.tenantType === 'sub' || form.tenantType === 'roommate';
 
       const bytes = await fillRa89Form({
         tenantName: form.tenantName.trim() || undefined,
@@ -613,6 +624,12 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
         ownerName: form.ownerName.trim() || undefined,
         ownerAddress: form.ownerAddress.trim() || undefined,
         ownerPhone: form.ownerPhone.trim() || undefined,
+        // §12 only applies to sub-tenants/roommates — gate on tenantType so
+        // values typed before switching back to prime don't leak into the PDF.
+        payeeName: paysNonOwner ? form.payeeName.trim() || undefined : undefined,
+        payeeStreet: paysNonOwner ? form.payeeStreet.trim() || undefined : undefined,
+        payeeCityStateZip: paysNonOwner ? form.payeeCityStateZip.trim() || undefined : undefined,
+        payeePhone: paysNonOwner ? form.payeePhone.trim() || undefined : undefined,
         causes: form.causes,
         securityDepositAmount: form.causes.includes('security_deposit')
           ? Number.parseFloat(form.securityDepositAmount) || undefined
@@ -875,6 +892,22 @@ export default function ComplaintPreview({ verdict, estimate, address, bin }: Pr
                     <Toggle label={t('draft.coop')} value={form.coop} onChange={(v) => updateForm('coop', v)} />
                   </div>
                 </Card>
+
+                {/* §12 — only relevant when the tenant pays rent to someone
+                    other than the owner (sub-tenants, roommates). Every
+                    field optional: a roommate may pay the owner directly,
+                    in which case RA-89 §12 legitimately stays blank. */}
+                {(form.tenantType === 'sub' || form.tenantType === 'roommate') && (
+                  <Card kicker={t('draft.payee')}>
+                    <p className="text-xs text-secondary mb-3">{t('draft.payeeHint')}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Input label={t('draft.payeeName')} value={form.payeeName} onChange={(v) => updateForm('payeeName', v)} optional optionalLabel={t('common.optional')} />
+                      <Input label={t('draft.payeePhone')} value={form.payeePhone} onChange={(v) => updateForm('payeePhone', v)} placeholder="(212) 555-0100" optional optionalLabel={t('common.optional')} />
+                      <Input label={t('draft.payeeStreet')} value={form.payeeStreet} onChange={(v) => updateForm('payeeStreet', v)} placeholder={t('draft.payeeStreetPh')} optional optionalLabel={t('common.optional')} />
+                      <Input label={t('draft.payeeCityStateZip')} value={form.payeeCityStateZip} onChange={(v) => updateForm('payeeCityStateZip', v)} placeholder="New York, NY 10001" optional optionalLabel={t('common.optional')} />
+                    </div>
+                  </Card>
+                )}
 
                 {/* Optional — does NOT block Generate. Covers RA-89 §8(b):
                     the tenant's actual move-in may have started informally

@@ -251,6 +251,15 @@ export const en = {
   'draft.scrieDrie': 'SCRIE / DRIE recipient *',
   'draft.coop': 'Co-op apartment',
 
+  'draft.payee': 'Who you pay rent to (§12)',
+  'draft.payeeHint':
+    'If you pay rent to someone other than the owner (like the prime tenant), fill in who — this goes in RA-89 §12. Leave blank if you pay the owner directly.',
+  'draft.payeeName': 'Their name',
+  'draft.payeeStreet': 'Their street address',
+  'draft.payeeStreetPh': '123 Main St, Apt 2A',
+  'draft.payeeCityStateZip': 'City, State ZIP',
+  'draft.payeePhone': 'Their phone number',
+
   'draft.noLease': 'Initially moved in without written lease',
   'draft.noLeaseRent': 'Initial rent (no lease)',
   'draft.court': 'This complaint has been raised in court',

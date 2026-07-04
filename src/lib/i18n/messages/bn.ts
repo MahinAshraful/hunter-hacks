@@ -231,6 +231,15 @@ export const bn: Record<MessageKey, string> = {
   'draft.scrieDrie': 'SCRIE / DRIE প্রাপক *',
   'draft.coop': 'কো-অপ অ্যাপার্টমেন্ট',
 
+  'draft.payee': 'আপনি কাকে ভাড়া দেন (§12)',
+  'draft.payeeHint':
+    'যদি আপনি মালিক ছাড়া অন্য কাউকে ভাড়া দেন (যেমন মূল ভাড়াটে), তাহলে তার তথ্য লিখুন — এটি RA-89 ফর্মের §12-এ যাবে। সরাসরি মালিককে ভাড়া দিলে খালি রাখুন।',
+  'draft.payeeName': 'তার নাম',
+  'draft.payeeStreet': 'তার রাস্তার ঠিকানা',
+  'draft.payeeStreetPh': '123 Main St, Apt 2A',
+  'draft.payeeCityStateZip': 'শহর, রাজ্য, জিপ কোড',
+  'draft.payeePhone': 'তার ফোন নম্বর',
+
   'draft.noLease': 'শুরুতে লিখিত লিজ ছাড়া উঠেছিলাম',
   'draft.noLeaseRent': 'শুরুর ভাড়া (লিজ ছাড়া)',
   'draft.court': 'এই অভিযোগটি আদালতে তোলা হয়েছে',

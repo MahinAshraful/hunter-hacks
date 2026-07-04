@@ -231,6 +231,15 @@ export const zh: Record<MessageKey, string> = {
   'draft.scrieDrie': 'SCRIE / DRIE 受益人 *',
   'draft.coop': '合作公寓',
 
+  'draft.payee': '您向谁交租（§12）',
+  'draft.payeeHint':
+    '如果您把租金交给业主以外的人（比如主租户），请填写对方信息 — 这将填入 RA-89 表格第 12 节。如果您直接向业主交租，请留空。',
+  'draft.payeeName': '对方姓名',
+  'draft.payeeStreet': '对方街道地址',
+  'draft.payeeStreetPh': '123 Main St, Apt 2A',
+  'draft.payeeCityStateZip': '城市、州、邮编',
+  'draft.payeePhone': '对方电话号码',
+
   'draft.noLease': '最初入住时没有书面租约',
   'draft.noLeaseRent': '初始租金（无租约）',
   'draft.court': '此投诉已在法院提出',

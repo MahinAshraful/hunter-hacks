@@ -49,6 +49,14 @@ export type Ra89Input = {
   ownerAddress?: string;
   ownerPhone?: string;
 
+  // §12 person to whom rent is paid, when that's not the owner (sub-tenants
+  // and roommates typically pay a prime tenant). All optional — a roommate
+  // may well pay the owner directly, in which case §12 stays blank.
+  payeeName?: string;
+  payeeStreet?: string;
+  payeeCityStateZip?: string;
+  payeePhone?: string;
+
   // §13 causes
   causes?: string[];
 
@@ -214,6 +222,12 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
   s('Apt. No', ownerApt ? ownerApt[2] : '');
   s('City State Zip Code_3', ownerAddrParts[1] ?? '');
   s('Telephone Number', input.ownerPhone ?? '');
+
+  // ── §12 Person to whom rent is paid (if not the owner) ──────────────
+  s('Name_2', input.payeeName ?? '');
+  s('Number/Street_2', input.payeeStreet ?? '');
+  s('City State Zip Code_4', input.payeeCityStateZip ?? '');
+  s('Telephone Number_2', input.payeePhone ?? '');
 
   // ── §13 Overcharge period ───────────────────────────────────────────
   const overcharged = input.estimate.years_analyzed.filter((y) => y.overcharge_monthly > 0);

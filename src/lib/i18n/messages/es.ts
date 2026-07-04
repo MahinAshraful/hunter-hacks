@@ -232,6 +232,15 @@ export const es: Record<MessageKey, string> = {
   'draft.scrieDrie': 'Beneficiario de SCRIE / DRIE *',
   'draft.coop': 'Apartamento cooperativo',
 
+  'draft.payee': 'A quién le paga la renta (§12)',
+  'draft.payeeHint':
+    'Si le paga la renta a alguien que no es el dueño (como el inquilino principal), indique a quién — esto va en la §12 del RA-89. Déjelo en blanco si le paga directamente al dueño.',
+  'draft.payeeName': 'Su nombre',
+  'draft.payeeStreet': 'Su dirección (calle)',
+  'draft.payeeStreetPh': '123 Main St, Apt 2A',
+  'draft.payeeCityStateZip': 'Ciudad, Estado, Código postal',
+  'draft.payeePhone': 'Su número de teléfono',
+
   'draft.noLease': 'Se mudó inicialmente sin contrato escrito',
   'draft.noLeaseRent': 'Renta inicial (sin contrato)',
   'draft.court': 'Esta queja se ha planteado en un tribunal',
