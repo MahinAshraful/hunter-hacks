@@ -297,12 +297,33 @@ export async function fillRa89Form(input: Ra89Input): Promise<Uint8Array> {
     s(`Lease Amount ${n}`, usd(lease.actual_monthly));
   });
 
-  // Yearly rent summary columns (Current Year = most recent lease)
+  // ── §18 Monthly rent grid ───────────────────────────────────────────
+  // The "Current Year" … "6 Years Prior" fields are the table's YEAR
+  // HEADER boxes — they take the calendar year itself (2026, 2025, …),
+  // not a rent amount. Below them sits a 12-row × 7-column grid of cells
+  // (fill_27 … fill_110, row-major: Jan..Dec down, years across) holding
+  // the rent paid each month of each year.
   const yearLabels = ['Current Year', 'Last Year', '2 Years Prior', '3 Years Prior', '4 Years Prior', '5 Years Prior', '6 Years Prior'];
-  const sorted = [...input.estimate.years_analyzed].sort((a, b) => b.lease_start.localeCompare(a.lease_start));
-  sorted.slice(0, 7).forEach((lease, i) => {
-    s(yearLabels[i], usd(lease.actual_monthly));
-  });
+  const today = new Date();
+  const currentYear = today.getUTCFullYear();
+  const currentMonth = today.getUTCMonth() + 1;
+  yearLabels.forEach((label, i) => s(label, String(currentYear - i)));
+
+  // Rent in effect on the 15th of a given month, from the lease history.
+  const rentForMonth = (year: number, month: number): number | null => {
+    const mid = `${year}-${String(month).padStart(2, '0')}-15`;
+    const hit = allLeases.find((l) => l.lease_start <= mid && l.lease_end >= mid);
+    return hit ? hit.actual_monthly : null;
+  };
+  for (let row = 0; row < 12; row++) {
+    for (let col = 0; col < 7; col++) {
+      const year = currentYear - col;
+      const month = row + 1;
+      if (year === currentYear && month > currentMonth) continue; // future months stay blank
+      const rent = rentForMonth(year, month);
+      if (rent !== null) s(`fill_${27 + row * 7 + col}`, usd(rent));
+    }
+  }
 
   // ── §19 Evidence checkboxes ─────────────────────────────────────────
   // Check Box39=leases, 40=rent receipts, 41=cancelled checks,
